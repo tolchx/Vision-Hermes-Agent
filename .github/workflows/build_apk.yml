@@ -1,0 +1,56 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > samples/CameraAccessAndroid/local.properties
+          # Create secrets file to avoid build failure
+          mkdir -p samples/CameraAccessAndroid/app/src/main/java/com/meta/wearable/dat/externalsampleapps/cameraaccess
+          cat > samples/CameraAccessAndroid/app/src/main/java/com/meta/wearable/dat/externalsampleapps/cameraaccess/Secrets.kt << 'EOF'
+          object Secrets {
+              const val geminiAPIKey = "YOUR_GEMINI_API_KEY"
+              const val openClawHost = "https://hermes.tolch.com.ar"
+              const val openClawPort = 443
+              const val openClawHookToken = ""
+              const val openClawGatewayToken = ""
+              const val webrtcSignalingURL = ""
+          }
+          EOF
+
+      - name: Build with Gradle
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd samples/CameraAccessAndroid
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tail -50
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CameraAccess-Android-Debug
+          path: samples/CameraAccessAndroid/app/build/outputs/apk/debug/*.apk
+          retention-days: 7

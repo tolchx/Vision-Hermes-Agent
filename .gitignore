@@ -1,0 +1,9 @@
+.DS_Store
+
+# Android
+samples/CameraAccessAndroid/app/src/main/java/**/Secrets.kt
+samples/CameraAccessAndroid/local.properties
+samples/CameraAccessAndroid/.gradle/
+samples/CameraAccessAndroid/build/
+samples/CameraAccessAndroid/app/build/
+ipa/
