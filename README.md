@@ -23,7 +23,7 @@ VisionHermes now has **6 specialized tools** that connect Gemini's real-time voi
 | Tool | What it does | Gemini contributes | Hermes executes |
 |------|-------------|-------------------|-----------------|
 | `execute` | General-purpose actions | Understands the request | Web search, messages, reminders, etc. |
-| `gemelo_guardar_respuesta` | **Gemelo Digital** — builds a digital twin of your personality | Asks deep questions, detects emotions and speech patterns | Saves structured responses + analysis to Obsidian |
+| `gemelo_guardar_respuesta` | **Avatar Personal** — builds an evolving profile of your personality | Asks deep questions, detects emotions and speech patterns | Saves structured responses + analysis to Obsidian |
 | `guardar_nota_rapida` | Voice-to-vault notes | Takes dictation, adds context | Creates markdown files in your vault's 📥 Inbox |
 | `buscar_en_vault` | Semantic search of your knowledge | Interprets natural language queries | Searches Obsidian vault and returns relevant excerpts |
 | `guardar_observacion` | Visual memory from camera | Describes what it sees through the glasses camera | Saves timestamped observations with visual descriptions to vault |
@@ -60,7 +60,7 @@ Put on your glasses, tap the AI button, and talk:
 - **"Add milk to my shopping list"** -- delegates to Hermes Agent via `execute`
 - **"Send a message to John saying I'll be late"** -- routes through Hermes Agent
 - **"Search for the best coffee shops nearby"** -- web search via `execute`, results spoken back
-- **NEW: "Let's do today's deep question"** -- starts a Gemelo Digital session, Gemini asks profound questions about your life and values, saves to Obsidian
+- **NEW: "Let's do today's deep question"** -- starts an Avatar Personal session, Gemini asks profound questions about your life and values, saves to Obsidian
 - **NEW: "Save this idea for later"** -- `guardar_nota_rapida` instantly creates a note in your vault
 - **NEW: "What do I know about TouchDesigner noise?"** -- `buscar_en_vault` searches your entire Obsidian vault and Gemini reads the answer aloud
 - **NEW: "Remember this place"** -- `guardar_observacion` captures what Gemini sees through the camera and saves it as a visual note
@@ -70,11 +70,11 @@ The glasses camera streams at ~1fps to Gemini for visual context, while audio fl
 
 ---
 
-## 🧬 Gemelo Digital Project
+## 🧬 Avatar Personal Project
 
-One of the flagship features: **building a digital twin of Tolch's personality**.
+One of the flagship features: **building an evolving profile of the user's personality**.
 
-Every day, a deep personal question is sent via Telegram (or asked directly by Gemini). Tolch responds naturally for 15-20 minutes. Gemini detects emotions, speech patterns, values, and recurring themes. The structured analysis is saved to Obsidian via `gemelo_guardar_respuesta`.
+Every day, a deep personal question is sent via Telegram (or asked directly by Gemini). The user responds naturally for 15-20 minutes. Gemini detects emotions, speech patterns, values, and recurring themes. The structured analysis is saved to Obsidian via `gemelo_guardar_respuesta`.
 
 **10 categories, 57 questions total:**
 
@@ -91,7 +91,7 @@ Every day, a deep personal question is sent via Telegram (or asked directly by G
 | ⚖️ Ethics & Boundaries | 5 | Moral lines |
 | ☠️ Death & Transcendence | 5 | Legacy |
 
-After each session, the profile accumulates: detected traits, fundamental values, linguistic patterns, and emotional tendencies. The goal: a digital twin that talks, feels, and reacts like Tolch.
+After each session, the profile accumulates: detected traits, fundamental values, linguistic patterns, and emotional tendencies. The goal: an Avatar Personal that reflects how the user talks, feels, and reacts.
 
 ---
 
@@ -133,7 +133,7 @@ Gemini Live API (WebSocket)
        |                         │    → reminders, lists│
        |                         │                      │
        |                         │  gemelo_guardar_resp. │
-       |                         │    → 🧬 Gemelo Digital│
+       |                         │    → 🧬 Avatar Personal│
        |                         │    → perfil acumulativo
        |                         │                      │
        |                         │  guardar_nota_rapida  │
@@ -170,8 +170,8 @@ Gemini Live API (WebSocket)
 ### 1. Clone and open
 
 ```bash
-git clone https://github.com/tolchx/Vision-Hermes.git
-cd Vision-Hermes/samples/CameraAccess
+git clone https://github.com/tolchx/Vision-Hermes-Agent.git
+cd Vision-Hermes-Agent/samples/CameraAccess
 open CameraAccess.xcodeproj
 ```
 
@@ -349,7 +349,7 @@ All source code is in `samples/CameraAccess/CameraAccess/`:
 
 | File | Purpose |
 |------|---------|
-| `Gemini/GeminiConfig.swift` | API keys, model config, system prompt (includes Gemelo Digital + tool instructions) |
+| `Gemini/GeminiConfig.swift` | API keys, model config, system prompt (includes Avatar Personal + tool instructions) |
 | `Gemini/GeminiLiveService.swift` | WebSocket client for Gemini Live API |
 | `Gemini/AudioManager.swift` | Mic capture (PCM 16kHz) + audio playback (PCM 24kHz) |
 | `Gemini/ChatModels.swift` | ChatSession, ChatMessage, Role data models |
@@ -402,7 +402,7 @@ VisionHermes now supports **6 specialized tool declarations** (previously just 1
 
 1. **`execute(task)`** — General-purpose. Web search, messages, reminders, smart home, etc. Be detailed in the task description.
 
-2. **`gemelo_guardar_respuesta(categoria, pregunta, respuesta, analisis_emocion?, frases_clave?, nuevo_rasgo?)`** — Saves Gemelo Digital responses. Captures category, question, answer, emotional analysis, key quotes, and new personality traits.
+2. **`gemelo_guardar_respuesta(categoria, pregunta, respuesta, analisis_emocion?, frases_clave?, nuevo_rasgo?)`** — Saves Avatar Personal responses. Captures category, question, answer, emotional analysis, key quotes, and new personality traits.
 
 3. **`guardar_nota_rapida(titulo, contenido, carpeta?)`** — Voice-to-vault. Creates markdown notes in the specified folder (default: 📥 Inbox).
 

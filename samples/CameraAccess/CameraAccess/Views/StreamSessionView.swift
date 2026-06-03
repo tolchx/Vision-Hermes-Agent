@@ -238,7 +238,7 @@ struct HamburgerMenuView: View {
 
                             if functionsExpanded {
                                 MenuFeatureRow(icon: "person.text.rectangle.fill", color: DS.Color.accentCyan,
-                                    title: "🧬 Gemelo Digital",
+                                    title: "🧬 Avatar Personal",
                                     subtitle: "Preguntas profundas sobre tu personalidad")
                                     .transition(.opacity.combined(with: .move(edge: .top)))
                                 MenuFeatureRow(icon: "square.and.pencil", color: DS.Color.accentPurple,

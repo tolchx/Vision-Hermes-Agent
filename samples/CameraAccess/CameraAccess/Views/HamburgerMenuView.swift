@@ -130,7 +130,7 @@ struct HamburgerMenuView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             DSSectionHeader(title: "Funciones")
 
-                            MenuFeatureRow(icon: "person.text.rectangle.fill", color: DS.Color.accentCyan, title: "🧬 Gemelo Digital")
+                            MenuFeatureRow(icon: "person.text.rectangle.fill", color: DS.Color.accentCyan, title: "🧬 Avatar Personal")
                             MenuFeatureRow(icon: "square.and.pencil", color: DS.Color.accentPurple, title: "📝 Notas por Voz")
                             MenuFeatureRow(icon: "magnifyingglass", color: DS.Color.accentCyan, title: "🔍 Buscar en Vault")
                             MenuFeatureRow(icon: "doc.text.fill", color: DS.Color.accentPurple, title: "📄 Exportar Chat")

@@ -123,7 +123,7 @@ class ChatHistoryManager: ObservableObject {
         """
 
         for msg in session.messages {
-            let role = msg.role == .user ? "👤 **Tolch**" : "🤖 **Gemini**"
+            let role = msg.role == .user ? "👤 **User**" : "🤖 **Gemini**"
             let timeStr = DateFormatter.localizedString(from: msg.timestamp, dateStyle: .none, timeStyle: .short)
             md += "\n### \(role) · \(timeStr)\n\n\(msg.text)\n\n---\n"
         }

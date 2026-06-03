@@ -144,7 +144,7 @@ enum ToolDeclarations {
 
   static let gemeloGuardarRespuesta: [String: Any] = [
     "name": "gemelo_guardar_respuesta",
-    "description": "Guarda una respuesta del Gemelo Digital de Tolch en Obsidian. Usar cuando Tolch responda una pregunta profunda sobre su personalidad, valores o historia. REQUIERE: categoria, pregunta y respuesta.",
+    "description": "Guarda una respuesta del Avatar Personal del usuario en Obsidian. Usar cuando el usuario responda una pregunta profunda sobre su personalidad, valores o historia. REQUIERE: categoria, pregunta y respuesta.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -154,11 +154,11 @@ enum ToolDeclarations {
         ],
         "pregunta": [
           "type": "string",
-          "description": "La pregunta exacta que se le hizo a Tolch"
+          "description": "La pregunta exacta que se le hizo al usuario"
         ],
         "respuesta": [
           "type": "string",
-          "description": "Transcripción completa o resumen detallado de lo que dijo Tolch"
+          "description": "Transcripción completa o resumen detallado de lo que dijo el usuario"
         ],
         "analisis_emocion": [
           "type": "string",
@@ -183,7 +183,7 @@ enum ToolDeclarations {
 
   static let guardarNotaRapida: [String: Any] = [
     "name": "guardar_nota_rapida",
-    "description": "Guarda una nota rápida en Obsidian. Usar cuando Tolch dice algo que quiere recordar: ideas, tareas, inspiración, algo que vio, algo que pensó. Crea un archivo Markdown en la carpeta 📥 Inbox del vault.",
+    "description": "Guarda una nota rápida en Obsidian. Usar cuando el usuario dice algo que quiere recordar: ideas, tareas, inspiración, algo que vio, algo que pensó. Crea un archivo Markdown en la carpeta 📥 Inbox del vault.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -209,7 +209,7 @@ enum ToolDeclarations {
 
   static let buscarEnVault: [String: Any] = [
     "name": "buscar_en_vault",
-    "description": "Busca información en el vault de Obsidian de Tolch. Usar cuando pregunte algo que pueda estar en sus notas: conceptos de TouchDesigner, proyectos, sesiones pasadas, memoria de Hermes, etc. Devuelve fragmentos relevantes de las notas.",
+    "description": "Busca información en el vault de Obsidian del usuario. Usar cuando pregunte algo que pueda estar en sus notas: conceptos de TouchDesigner, proyectos, sesiones pasadas, memoria de Hermes, etc. Devuelve fragmentos relevantes de las notas.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -231,7 +231,7 @@ enum ToolDeclarations {
 
   static let guardarObservacion: [String: Any] = [
     "name": "guardar_observacion",
-    "description": "Guarda una observación del mundo real captada por la cámara de las gafas. Gemini describe lo que ve y Hermes lo guarda como nota en Obsidian con timestamp y contexto visual. Usar cuando Tolch ve algo interesante, un lugar, un objeto, una persona, una obra de arte, etc. y quiere registrarlo.",
+    "description": "Guarda una observación del mundo real captada por la cámara de las gafas. Gemini describe lo que ve y Hermes lo guarda como nota en Obsidian con timestamp y contexto visual. Usar cuando el usuario ve algo interesante, un lugar, un objeto, una persona, una obra de arte, etc. y quiere registrarlo.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -245,7 +245,7 @@ enum ToolDeclarations {
         ],
         "contexto": [
           "type": "string",
-          "description": "Contexto de por qué esto es relevante: lo que dijo Tolch al verlo, por qué llamó su atención, qué quiere recordar"
+          "description": "Contexto de por qué esto es relevante: lo que dijo el usuario al verlo, por qué llamó su atención, qué quiere recordar"
         ],
         "tags": [
           "type": "array",
@@ -262,7 +262,7 @@ enum ToolDeclarations {
 
   static let exportarChatMd: [String: Any] = [
     "name": "exportar_chat_md",
-    "description": "Exporta el historial de la conversación actual como archivo Markdown y lo guarda en el vault de Obsidian y/o lo comparte. Usar cuando Tolch pida guardar toda la conversación, exportar el chat, o tener un registro permanente de lo hablado.",
+    "description": "Exporta el historial de la conversación actual como archivo Markdown y lo guarda en el vault de Obsidian y/o lo comparte. Usar cuando el usuario pida guardar toda la conversación, exportar el chat, o tener un registro permanente de lo hablado.",
     "parameters": [
       "type": "object",
       "properties": [

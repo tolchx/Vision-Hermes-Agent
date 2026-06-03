@@ -24,7 +24,7 @@ struct HomeScreenView: View {
 
   private let cards: [(icon: String, color: Color, title: String, text: String)] = [
     ("person.text.rectangle.fill", DS.Color.accentCyan,
-     "🧬 Gemelo Digital",
+     "🧬 Avatar Personal",
      "Preguntas profundas sobre tu vida, valores y personalidad. Cada respuesta se guarda en tu vault."),
     ("square.and.pencil", DS.Color.accentPurple,
      "📝 Notas por Voz",
