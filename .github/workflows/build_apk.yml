@@ -32,7 +32,7 @@ jobs:
           cat > samples/CameraAccessAndroid/app/src/main/java/com/meta/wearable/dat/externalsampleapps/cameraaccess/Secrets.kt << 'EOF'
           object Secrets {
               const val geminiAPIKey = "YOUR_GEMINI_API_KEY"
-              const val openClawHost = "https://hermes.tolch.com.ar"
+              const val openClawHost = "https://your-hermes-domain.example.com"
               const val openClawPort = 443
               const val openClawHookToken = ""
               const val openClawGatewayToken = ""
