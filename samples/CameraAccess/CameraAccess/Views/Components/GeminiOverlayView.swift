@@ -233,6 +233,15 @@ struct GenerativeToolCardView: View {
     case "resumen_walk_and_talk": return Color(red: 0.65, green: 0.35, blue: 0.95)
     case "guardar_referencia_visual": return Color(red: 1.0, green: 0.6, blue: 0.1)
     case "consultar_briefing_diario": return Color(red: 1.0, green: 0.8, blue: 0.2)
+    case "delegar_investigacion_profunda": return Color(red: 0.45, green: 0.35, blue: 0.95)
+    case "capturar_paleta_y_texturas": return Color(red: 0.95, green: 0.25, blue: 0.65)
+    case "inspeccionar_pantalla_o_pizarra": return Color(red: 0.1, green: 0.8, blue: 0.8)
+    case "recordar_contacto_o_networking": return Color(red: 0.2, green: 0.85, blue: 0.5)
+    case "registrar_gasto_o_habito": return Color(red: 0.95, green: 0.75, blue: 0.2)
+    case "repasar_conceptos_vault": return Color(red: 1.0, green: 0.5, blue: 0.3)
+    case "monitorear_proceso_o_render": return Color(red: 0.2, green: 0.6, blue: 1.0)
+    case "control_ambiente_pc": return Color(red: 0.6, green: 0.4, blue: 0.85)
+    case "donde_deje_mi_objeto": return Color(red: 0.95, green: 0.2, blue: 0.5)
     default: return DS.Color.accentCyan
     }
   }
@@ -333,6 +342,33 @@ struct GenerativeToolCardView: View {
           case "consultar_briefing_diario":
             briefingDiarioView
 
+          case "delegar_investigacion_profunda":
+            investigacionProfundaView
+
+          case "capturar_paleta_y_texturas":
+            paletaTexturasView
+
+          case "inspeccionar_pantalla_o_pizarra":
+            inspeccionPantallaView
+
+          case "recordar_contacto_o_networking":
+            contactoNetworkingView
+
+          case "registrar_gasto_o_habito":
+            registroGastoHabitoView
+
+          case "repasar_conceptos_vault":
+            repasoConceptosVaultView
+
+          case "monitorear_proceso_o_render":
+            monitoreoProcesoView
+
+          case "control_ambiente_pc":
+            controlAmbienteView
+
+          case "donde_deje_mi_objeto":
+            dondeDejeObjetoView
+
           default:
             genericTaskView
           }
@@ -395,6 +431,15 @@ struct GenerativeToolCardView: View {
     case "resumen_walk_and_talk": return "Walk & Talk"
     case "guardar_referencia_visual": return "Field Scout (TouchDesigner)"
     case "consultar_briefing_diario": return "Briefing Diario"
+    case "delegar_investigacion_profunda": return "Investigación Autónoma"
+    case "capturar_paleta_y_texturas": return "Paleta & Texturas"
+    case "inspeccionar_pantalla_o_pizarra": return "Inspección de Código"
+    case "recordar_contacto_o_networking": return "Contacto de Networking"
+    case "registrar_gasto_o_habito": return "Registro Rápido"
+    case "repasar_conceptos_vault": return "Walk & Learn (Vault)"
+    case "monitorear_proceso_o_render": return "Monitor de Render / PC"
+    case "control_ambiente_pc": return "Control Remoto PC"
+    case "donde_deje_mi_objeto": return "¿Dónde dejé mi objeto?"
     default: return ToolIcon.shortName(for: toolName)
     }
   }
@@ -863,6 +908,333 @@ struct GenerativeToolCardView: View {
     }
   }
 
+  private var investigacionProfundaView: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      if let tema = args["tema"] as? String {
+        Text(tema)
+          .font(.system(size: 13, weight: .bold))
+          .foregroundColor(.white)
+          .lineLimit(2)
+      }
+
+      if let objetivo = args["objetivo"] as? String {
+        Text("🎯 \(objetivo)")
+          .font(.system(size: 11))
+          .foregroundColor(.white.opacity(0.8))
+          .lineLimit(2)
+      }
+
+      HStack(spacing: 6) {
+        HStack(spacing: 4) {
+          Image(systemName: "cpu.fill")
+            .font(.system(size: 9))
+          Text("Subagente PC")
+            .font(.system(size: 9, weight: .bold))
+        }
+        .foregroundColor(accentColor)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(Capsule().fill(accentColor.opacity(0.15)))
+
+        if let prof = args["profundidad"] as? String {
+          Text(prof.replacingOccurrences(of: "_", with: " ").capitalized)
+            .font(.system(size: 9, weight: .medium))
+            .foregroundColor(.white.opacity(0.7))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+        }
+
+        Spacer()
+
+        HStack(spacing: 4) {
+          Image(systemName: "paperplane.fill")
+            .font(.system(size: 9))
+          Text("Telegram")
+            .font(.system(size: 9, weight: .medium))
+        }
+        .foregroundColor(.cyan)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(Capsule().fill(Color.cyan.opacity(0.15)))
+      }
+    }
+  }
+
+  private var paletaTexturasView: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      if let titulo = args["titulo"] as? String {
+        Text(titulo)
+          .font(.system(size: 13, weight: .semibold))
+          .foregroundColor(.white)
+      }
+
+      if let hexList = args["paleta_hex"] as? [String], !hexList.isEmpty {
+        HStack(spacing: 6) {
+          ForEach(hexList.prefix(5), id: \.self) { hex in
+            VStack(spacing: 3) {
+              RoundedRectangle(cornerRadius: 6)
+                .fill(Color(hex: hex))
+                .frame(width: 38, height: 24)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+                )
+              Text(hex.uppercased())
+                .font(.system(size: 8, weight: .monospaced))
+                .foregroundColor(.white.opacity(0.7))
+            }
+          }
+        }
+      }
+
+      if let td = args["sugerencia_touchdesigner"] as? String {
+        Text("💡 TD: \(td)")
+          .font(.system(size: 11, weight: .medium))
+          .foregroundColor(accentColor)
+          .lineLimit(2)
+      }
+    }
+  }
+
+  private var inspeccionPantallaView: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 6) {
+        if let contexto = args["contexto"] as? String {
+          Text(contexto)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundColor(accentColor)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(accentColor.opacity(0.15)))
+        }
+
+        if let accion = args["accion_requerida"] as? String {
+          Text(accion.replacingOccurrences(of: "_", with: " "))
+            .font(.system(size: 9, weight: .medium))
+            .foregroundColor(.white.opacity(0.7))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+        }
+      }
+
+      if let analisis = args["analisis_visual"] as? String {
+        Text(analisis)
+          .font(.system(size: 11))
+          .foregroundColor(.white.opacity(0.85))
+          .lineLimit(3)
+      }
+
+      if let codigo = args["codigo_o_diagrama"] as? String, !codigo.isEmpty {
+        Text(codigo.prefix(120) + (codigo.count > 120 ? "…" : ""))
+          .font(.system(size: 10, design: .monospaced))
+          .foregroundColor(accentColor)
+          .padding(6)
+          .background(RoundedRectangle(cornerRadius: 6).fill(Color.black.opacity(0.4)))
+          .lineLimit(2)
+      }
+    }
+  }
+
+  private var contactoNetworkingView: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 6) {
+        if let nombre = args["nombre"] as? String {
+          Text(nombre)
+            .font(.system(size: 13, weight: .bold))
+            .foregroundColor(.white)
+        }
+
+        if let rol = args["rol_o_empresa"] as? String {
+          Text("• \(rol)")
+            .font(.system(size: 11))
+            .foregroundColor(.white.opacity(0.7))
+            .lineLimit(1)
+        }
+      }
+
+      if let charla = args["contexto_charla"] as? String {
+        Text(charla)
+          .font(.system(size: 11))
+          .foregroundColor(.white.opacity(0.8))
+          .lineLimit(2)
+      }
+
+      if let comp = args["compromiso_o_proximo_paso"] as? String {
+        HStack(spacing: 4) {
+          Image(systemName: "calendar.badge.clock")
+            .font(.system(size: 9))
+            .foregroundColor(accentColor)
+          Text(comp)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(accentColor)
+            .lineLimit(1)
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 2)
+        .background(Capsule().fill(accentColor.opacity(0.12)))
+      }
+    }
+  }
+
+  private var registroGastoHabitoView: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(alignment: .firstTextBaseline, spacing: 8) {
+        if let valor = args["valor"] as? String {
+          Text(valor)
+            .font(.system(size: 17, weight: .bold, design: .rounded))
+            .foregroundColor(accentColor)
+        }
+
+        if let concepto = args["concepto"] as? String {
+          Text(concepto)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(.white)
+        }
+      }
+
+      HStack(spacing: 6) {
+        if let tipo = args["tipo_registro"] as? String {
+          Text(tipo.uppercased())
+            .font(.system(size: 9, weight: .bold))
+            .foregroundColor(accentColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(accentColor.opacity(0.15)))
+        }
+
+        if let cat = args["categoria"] as? String {
+          Text(cat)
+            .font(.system(size: 9, weight: .medium))
+            .foregroundColor(.white.opacity(0.7))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+        }
+
+        if let pago = args["medio_pago"] as? String {
+          Text(pago)
+            .font(.system(size: 9, weight: .medium))
+            .foregroundColor(.white.opacity(0.6))
+        }
+      }
+    }
+  }
+
+  private var repasoConceptosVaultView: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 6) {
+        if let tema = args["tema_o_carpeta"] as? String {
+          Text(tema)
+            .font(.system(size: 13, weight: .bold))
+            .foregroundColor(.white)
+        }
+
+        if let modo = args["modo"] as? String {
+          Text(modo.replacingOccurrences(of: "_", with: " ").capitalized)
+            .font(.system(size: 9, weight: .semibold))
+            .foregroundColor(accentColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(accentColor.opacity(0.15)))
+        }
+      }
+
+      HStack(spacing: 4) {
+        Image(systemName: "figure.walk")
+          .font(.system(size: 10))
+          .foregroundColor(.white.opacity(0.6))
+        Text("Walk & Learn activo — Preguntas por voz en tus gafas")
+          .font(.system(size: 10))
+          .foregroundColor(.white.opacity(0.7))
+      }
+    }
+  }
+
+  private var monitoreoProcesoView: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 6) {
+        if let proc = args["proceso"] as? String {
+          HStack(spacing: 4) {
+            Circle()
+              .fill(Color.green)
+              .frame(width: 6, height: 6)
+            Text(proc.uppercased())
+              .font(.system(size: 10, weight: .bold))
+              .foregroundColor(.white)
+          }
+          .padding(.horizontal, 7)
+          .padding(.vertical, 2)
+          .background(Capsule().fill(Color.green.opacity(0.2)))
+        }
+
+        if let accion = args["accion"] as? String {
+          Text(accion.replacingOccurrences(of: "_", with: " "))
+            .font(.system(size: 9, weight: .medium))
+            .foregroundColor(.white.opacity(0.7))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+        }
+      }
+
+      if let cond = args["condicion_aviso"] as? String {
+        Text("🔔 Alerta: \(cond)")
+          .font(.system(size: 10, weight: .medium))
+          .foregroundColor(accentColor)
+      }
+    }
+  }
+
+  private var controlAmbienteView: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 6) {
+        if let accion = args["accion"] as? String {
+          Text(accion.replacingOccurrences(of: "_", with: " ").capitalized)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundColor(.white)
+        }
+
+        if let obj = args["objetivo"] as? String {
+          Text("→ \(obj)")
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(accentColor)
+        }
+      }
+      Text("Comando enviado a la PC de casa")
+        .font(.system(size: 10))
+        .foregroundColor(.white.opacity(0.6))
+    }
+  }
+
+  private var dondeDejeObjetoView: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack(spacing: 6) {
+        if let obj = args["objeto"] as? String {
+          Text(obj.capitalized)
+            .font(.system(size: 13, weight: .bold))
+            .foregroundColor(accentColor)
+        }
+
+        if let lugar = args["contexto_lugar"] as? String {
+          Text("• \(lugar)")
+            .font(.system(size: 11))
+            .foregroundColor(.white.opacity(0.7))
+        }
+      }
+
+      HStack(spacing: 4) {
+        Image(systemName: "clock.arrow.circlepath")
+          .font(.system(size: 10))
+          .foregroundColor(.white.opacity(0.6))
+        Text("Buscando en últimas 24 escenas de cámara...")
+          .font(.system(size: 10))
+          .foregroundColor(.white.opacity(0.7))
+      }
+    }
+  }
+
   private func scheduleAutoCollapse(delay: Double = 5.0) {
     autoCollapseTask?.cancel()
     autoCollapseTask = Task {
@@ -1101,3 +1473,32 @@ struct ConnectionHealthIndicator: View {
     }
   }
 }
+
+// MARK: - Color Hex Initializer Helper
+
+extension Color {
+  init(hex: String) {
+    let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+    var int: UInt64 = 0
+    Scanner(string: cleaned).scanHexInt64(&int)
+    let a, r, g, b: UInt64
+    switch cleaned.count {
+    case 3: // RGB (12-bit)
+      (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+    case 6: // RGB (24-bit)
+      (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+    case 8: // ARGB (32-bit)
+      (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+    default:
+      (a, r, g, b) = (255, 128, 128, 128)
+    }
+    self.init(
+      .sRGB,
+      red: Double(r) / 255,
+      green: Double(g) / 255,
+      blue: Double(b) / 255,
+      opacity: Double(a) / 255
+    )
+  }
+}
+

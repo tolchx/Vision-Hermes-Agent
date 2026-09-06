@@ -327,6 +327,7 @@ class GeminiSessionViewModel: ObservableObject {
     lastVideoFrameTime = now
     lastSentThumbnail = currentThumb
     latestFrame = image
+    TemporalVisualMemory.shared.recordFrameIfSignificant(image, locationContext: LocationManager.shared.currentLocationString)
     geminiService.sendVideoFrame(image: image)
   }
 

@@ -1,4 +1,4 @@
-import UIKit
+﻿import UIKit
 import Foundation
 
 // MARK: - Gemini Tool Call (parsed from server JSON)
@@ -75,6 +75,15 @@ enum ToolIcon {
     case "resumen_walk_and_talk": return "figure.walk"
     case "guardar_referencia_visual": return "sparkles.tv"
     case "consultar_briefing_diario": return "sun.max.fill"
+    case "delegar_investigacion_profunda": return "brain.head.profile"
+    case "capturar_paleta_y_texturas": return "paintpalette.fill"
+    case "inspeccionar_pantalla_o_pizarra": return "chevron.left.forwardslash.chevron.right"
+    case "recordar_contacto_o_networking": return "person.crop.circle.badge.plus"
+    case "registrar_gasto_o_habito": return "creditcard.fill"
+    case "repasar_conceptos_vault": return "books.vertical.fill"
+    case "monitorear_proceso_o_render": return "gauge.with.needle.fill"
+    case "control_ambiente_pc": return "macwindow"
+    case "donde_deje_mi_objeto": return "location.magnifyingglass"
     default: return "link.circle.fill"
     }
   }
@@ -94,6 +103,15 @@ enum ToolIcon {
     case "resumen_walk_and_talk": return "Walk & Talk"
     case "guardar_referencia_visual": return "Field Scout"
     case "consultar_briefing_diario": return "Briefing"
+    case "delegar_investigacion_profunda": return "Investigación"
+    case "capturar_paleta_y_texturas": return "Paleta & Textura"
+    case "inspeccionar_pantalla_o_pizarra": return "Inspección Código"
+    case "recordar_contacto_o_networking": return "Contacto CRM"
+    case "registrar_gasto_o_habito": return "Registro Diario"
+    case "repasar_conceptos_vault": return "Repaso Vault"
+    case "monitorear_proceso_o_render": return "Monitor Render"
+    case "control_ambiente_pc": return "Control PC"
+    case "donde_deje_mi_objeto": return "Buscar Objeto"
     default: return toolName.replacingOccurrences(of: "_", with: " ").capitalized
     }
   }
@@ -161,6 +179,15 @@ enum ToolDeclarations {
       resumenWalkAndTalk,
       guardarReferenciaVisual,
       consultarBriefingDiario,
+      delegarInvestigacionProfunda,
+      capturarPaletaYTexturas,
+      inspeccionarPantallaOPizarra,
+      recordarContactoONetworking,
+      registrarGastoOHabito,
+      repasarConceptosVault,
+      monitorearProcesoORender,
+      controlAmbientePC,
+      dondeDejeMiObjeto,
     ]
   }
 
@@ -405,7 +432,7 @@ enum ToolDeclarations {
 
   static let ejecutarScriptRemoto: [String: Any] = [
     "name": "ejecutar_script_remoto",
-    "description": "Ejecuta un comando de consola, script de Python, Node.js, Git, Docker o pipeline de TouchDesigner en la computadora del usuario. Responde por las gafas con una síntesis breve en audio y envía el log completo o diff a Telegram.",
+    "description": "Ejecuta un comando de consola, script de Python, Node.js, Git, Docker o pipeline de TouchDesigner en la computadora del usuario en casa. Responde por las gafas con una síntesis breve en audio y envía el log completo o diff a Telegram.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -522,6 +549,266 @@ enum ToolDeclarations {
         ]
       ],
       "required": ["alcance"]
+    ] as [String: Any],
+    "behavior": "BLOCKING"
+  ]
+
+  // ── 14. delegar_investigacion_profunda ──────────────────────────
+
+  static let delegarInvestigacionProfunda: [String: Any] = [
+    "name": "delegar_investigacion_profunda",
+    "description": "Delega una investigación técnica, búsqueda de papers/repositorios o análisis profundo a un subagente autónomo de Hermes en la PC. Gemini confirma con 1 frase por las gafas y el subagente entrega el reporte completo con código y enlaces a Telegram y Obsidian. USAR cuando el usuario pida investigar un tema a fondo, buscar código o prototipar algo mientras está en movimiento.",
+    "parameters": [
+      "type": "object",
+      "properties": [
+        "tema": [
+          "type": "string",
+          "description": "Tema o problema tecnológico a investigar a fondo (ej: 'Optimización de shaders GLSL de fluidos en TouchDesigner')"
+        ],
+        "objetivo": [
+          "type": "string",
+          "description": "Entregable concreto esperado (ej: 'Código de ejemplo, benchmarks y repos de GitHub')"
+        ],
+        "entregar_en": [
+          "type": "string",
+          "description": "Destino principal de la entrega: 'telegram', 'obsidian', o 'ambos' (por defecto: ambos)"
+        ],
+        "profundidad": [
+          "type": "string",
+          "description": "Nivel de profundidad: 'rapida' (2-5 min), 'exhaustiva' (10-15 min), 'con_codigo' (desarrolla un prototipo funcional)"
+        ]
+      ],
+      "required": ["tema", "objetivo"]
+    ] as [String: Any],
+    "behavior": "BLOCKING"
+  ]
+
+  // ── 15. capturar_paleta_y_texturas ───────────────────────────
+
+  static let capturarPaletaYTexturas: [String: Any] = [
+    "name": "capturar_paleta_y_texturas",
+    "description": "Field Scout cromático y de texturas. Gemini analiza visualmente la escena actual de la cámara de las gafas, extrae los 3 a 5 colores principales en formato hexadecimal (#RRGGBB), analiza balance lumínico y sugiere operadores de TouchDesigner o shaders (Ramp TOP, Noise, Feedback). Guarda la paleta en Obsidian y la envía a Telegram con la foto.",
+    "parameters": [
+      "type": "object",
+      "properties": [
+        "titulo": [
+          "type": "string",
+          "description": "Título descriptivo de la referencia (ej: 'Iluminación Neón Ciberpunk en Vidriera')"
+        ],
+        "tipo": [
+          "type": "string",
+          "description": "Tipo de análisis: 'paleta_color', 'textura_shader', o 'ambos'"
+        ],
+        "paleta_hex": [
+          "type": "array",
+          "items": ["type": "string"],
+          "description": "Lista de 3 a 5 códigos HEX representativos detectados en la escena (ej: ['#FF0055', '#00E5FF', '#1A0B2E'])"
+        ],
+        "analisis_estetico": [
+          "type": "string",
+          "description": "Descripción de la iluminación, contraste, tipo de ruido visual o composición espacial"
+        ],
+        "sugerencia_touchdesigner": [
+          "type": "string",
+          "description": "Operadores (TOPs, CHOPs) o técnicas recomendadas en TouchDesigner (ej: 'Feedback TOP con Slope y Ramp TOP')"
+        ]
+      ],
+      "required": ["titulo", "paleta_hex", "sugerencia_touchdesigner"]
+    ] as [String: Any],
+    "behavior": "BLOCKING"
+  ]
+
+  // ── 16. inspeccionar_pantalla_o_pizarra ───────────────────────
+
+  static let inspeccionarPantallaOPizarra: [String: Any] = [
+    "name": "inspeccionar_pantalla_o_pizarra",
+    "description": "Inspecciona mediante la cámara de las gafas una pantalla de computadora (terminal con error, código fuente en IDE) o una pizarra con diagramas/notas. Gemini transcribe el error o diagrama, explica la solución o lo traduce a sintaxis Mermaid / código, y Hermes lo guarda en Obsidian o ejecuta el parche.",
+    "parameters": [
+      "type": "object",
+      "properties": [
+        "contexto": [
+          "type": "string",
+          "description": "Qué se está observando (ej: 'Error en consola de Python', 'Diagrama de arquitectura en pizarra', 'Shader GLSL en TouchDesigner')"
+        ],
+        "accion_requerida": [
+          "type": "string",
+          "description": "Acción a realizar: 'explicar_error', 'convertir_a_mermaid', 'generar_parche_git', 'guardar_apuntes'"
+        ],
+        "analisis_visual": [
+          "type": "string",
+          "description": "Detalle técnico de lo leído en pantalla o pizarra por Gemini"
+        ],
+        "codigo_o_diagrama": [
+          "type": "string",
+          "description": "Código sugerido, diagrama en sintaxis Mermaid o solución en texto (opcional)"
+        ]
+      ],
+      "required": ["contexto", "accion_requerida", "analisis_visual"]
+    ] as [String: Any],
+    "behavior": "BLOCKING"
+  ]
+
+  // ── 17. recordar_contacto_o_networking ───────────────────────
+
+  static let recordarContactoONetworking: [String: Any] = [
+    "name": "recordar_contacto_o_networking",
+    "description": "Registra una interacción de networking o contacto nuevo después de una conversación. Guarda el nombre, rol, temas tratados, compromisos asumidos, fecha y ubicación GPS en Obsidian (🤝 Contactos) y agenda un recordatorio de seguimiento en Telegram.",
+    "parameters": [
+      "type": "object",
+      "properties": [
+        "nombre": [
+          "type": "string",
+          "description": "Nombre de la persona o contacto (ej: 'Martín Gómez')"
+        ],
+        "rol_o_empresa": [
+          "type": "string",
+          "description": "Puesto, empresa o proyecto de la persona (ej: 'Director de Arte en Estudio Lumina')"
+        ],
+        "contexto_charla": [
+          "type": "string",
+          "description": "Resumen de lo conversado, intereses compartidos o sinergias identificadas"
+        ],
+        "compromiso_o_proximo_paso": [
+          "type": "string",
+          "description": "Acción prometida o acordada (ej: 'Escribirle el martes para enviarle demo de TouchDesigner')"
+        ],
+        "tags": [
+          "type": "array",
+          "items": ["type": "string"],
+          "description": "Etiquetas temáticas (ej: ['networking', 'arte-digital', 'cliente'])"
+        ]
+      ],
+      "required": ["nombre", "contexto_charla"]
+    ] as [String: Any],
+    "behavior": "BLOCKING"
+  ]
+
+  // ── 18. registrar_gasto_o_habito ─────────────────────────────
+
+  static let registrarGastoOHabito: [String: Any] = [
+    "name": "registrar_gasto_o_habito",
+    "description": "Registra rápidamente por voz un gasto financiero, hábito personal (agua, lectura, ejercicio) o métrica diaria. Hermes agrega la entrada con fecha y hora en las notas de registro de Obsidian (Dataview) y Gemini responde confirmando el total acumulado.",
+    "parameters": [
+      "type": "object",
+      "properties": [
+        "tipo_registro": [
+          "type": "string",
+          "description": "Tipo: 'gasto', 'ingreso', 'habito', 'metrica'"
+        ],
+        "valor": [
+          "type": "string",
+          "description": "Monto o cantidad (ej: '$4500', '20 minutos', '2 litros')"
+        ],
+        "concepto": [
+          "type": "string",
+          "description": "Descripción de la transacción o actividad (ej: 'Café con medialunas', 'Entrenamiento tren superior')"
+        ],
+        "categoria": [
+          "type": "string",
+          "description": "Categoría opcional (ej: 'Alimentación', 'Transporte', 'Salud', 'Educación')"
+        ],
+        "medio_pago": [
+          "type": "string",
+          "description": "Medio de pago si es gasto (ej: 'Efectivo', 'Tarjeta Débito', 'MercadoPago')"
+        ]
+      ],
+      "required": ["tipo_registro", "valor", "concepto"]
+    ] as [String: Any],
+    "behavior": "BLOCKING"
+  ]
+
+  // ── 19. repasar_conceptos_vault ──────────────────────────────
+
+  static let repasarConceptosVault: [String: Any] = [
+    "name": "repasar_conceptos_vault",
+    "description": "Modo 'Walk & Learn'. Hermes consulta las notas del Vault de Obsidian sobre un tema solicitado y extrae conceptos o preguntas clave. Gemini actúa como un tutor interactivo por voz mientras el usuario camina, haciéndole preguntas socráticas breves y profundizando según sus respuestas.",
+    "parameters": [
+      "type": "object",
+      "properties": [
+        "tema_o_carpeta": [
+          "type": "string",
+          "description": "Tema o carpeta de Obsidian a repasar (ej: 'TouchDesigner', 'Filosofía', 'Arquitectura de Software')"
+        ],
+        "modo": [
+          "type": "string",
+          "description": "Modo de repaso: 'pregunta_socratica', 'resumen_audio', 'flashcard'"
+        ],
+        "concepto_especifico": [
+          "type": "string",
+          "description": "Concepto o nota específica si el usuario quiere enfocarse en algo puntual (opcional)"
+        ]
+      ],
+      "required": ["tema_o_carpeta"]
+    ] as [String: Any],
+    "behavior": "BLOCKING"
+  ]
+
+  // ── 20. monitorear_proceso_o_render ──────────────────────────
+
+  static let monitorearProcesoORender: [String: Any] = [
+    "name": "monitorear_proceso_o_render",
+    "description": "Supervisa en tiempo real el progreso de renders de TouchDesigner, contenedores de Docker, scripts de Python o el uso de GPU/CPU en la computadora de casa. Permite consultar el porcentaje de avance o programar una notificación a Telegram cuando el render finalice.",
+    "parameters": [
+      "type": "object",
+      "properties": [
+        "proceso": [
+          "type": "string",
+          "description": "Proceso a inspeccionar: 'touchdesigner', 'docker', 'python', 'gpu', 'todos'"
+        ],
+        "accion": [
+          "type": "string",
+          "description": "Acción: 'consultar_progreso', 'notificar_al_terminar', 'cancelar'"
+        ],
+        "condicion_aviso": [
+          "type": "string",
+          "description": "Condición para avisar (ej: 'al terminar el render', 'si la GPU supera 85 grados')"
+        ]
+      ],
+      "required": ["proceso", "accion"]
+    ] as [String: Any],
+    "behavior": "BLOCKING"
+  ]
+
+  // ── 21. control_ambiente_pc ──────────────────────────────────
+
+  static let controlAmbientePC: [String: Any] = [
+    "name": "control_ambiente_pc",
+    "description": "Ejecuta acciones de control del sistema en la computadora de casa a distancia: bloquear la pantalla, suspender el equipo, silenciar el audio, o abrir una aplicación/proyecto específico (ej: archivo .toe de TouchDesigner o el Vault de Obsidian).",
+    "parameters": [
+      "type": "object",
+      "properties": [
+        "accion": [
+          "type": "string",
+          "description": "Acción: 'bloquear_pantalla', 'suspender', 'abrir_app_o_proyecto', 'silenciar_audio', 'ejecutar_atajo'"
+        ],
+        "objetivo": [
+          "type": "string",
+          "description": "Nombre de la aplicación, archivo de proyecto o atajo a ejecutar (ej: 'TouchDesigner Mapping.toe', 'Spotify')"
+        ]
+      ],
+      "required": ["accion"]
+    ] as [String: Any],
+    "behavior": "BLOCKING"
+  ]
+
+  // ── 22. donde_deje_mi_objeto ─────────────────────────────────
+
+  static let dondeDejeMiObjeto: [String: Any] = [
+    "name": "donde_deje_mi_objeto",
+    "description": "Memoria visual temporal para objetos cotidianos (llaves, billetera, mochila, lentes). Consulta el buffer temporal de fotogramas recientes capturados por las gafas, identifica cuándo y dónde fue visto el objeto por última vez y le informa al usuario verbalmente y con foto a Telegram.",
+    "parameters": [
+      "type": "object",
+      "properties": [
+        "objeto": [
+          "type": "string",
+          "description": "Nombre del objeto a localizar (ej: 'llaves', 'billetera', 'mochila', 'cargador')"
+        ],
+        "contexto_lugar": [
+          "type": "string",
+          "description": "Lugar o ambiente donde cree haberlo dejado (opcional, ej: 'en casa', 'en el auto', 'en la oficina')"
+        ]
+      ],
+      "required": ["objeto"]
     ] as [String: Any],
     "behavior": "BLOCKING"
   ]
@@ -727,4 +1014,218 @@ extension ToolDeclarations {
     """
     return task
   }
+
+  /// Build a structured task string for delegar_investigacion_profunda
+  static func investigacionProfundaTask(
+    tema: String,
+    objetivo: String,
+    entregarEn: String? = nil,
+    profundidad: String? = nil,
+    locationContext: String? = nil
+  ) -> String {
+    var task = """
+    [INVESTIGACION_PROFUNDA]
+    Tema: \(tema)
+    Objetivo: \(objetivo)
+    Entregar en: \(entregarEn ?? "ambos (Telegram y Obsidian)")
+    Profundidad: \(profundidad ?? "con_codigo")
+    """
+    if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
+    task += """
+    \nInstrucciones para Hermes:
+    1. Spawnea un subagente autónomo en segundo plano para investigar a fondo, leer documentación, repositorios o papers.
+    2. Si requiere código, genera un prototipo funcional y guárdalo en tu workspace.
+    3. Guarda la síntesis estructurada en Obsidian (🧠 Investigaciones).
+    4. Envía el reporte ejecutivo completo con fragmentos de código y enlaces relevantes a Telegram.
+    5. Devuelve inmediatamente una confirmación concisa de 1 frase para que Gemini se la lea al usuario en sus gafas.
+    """
+    return task
+  }
+
+  /// Build a structured task string for capturar_paleta_y_texturas
+  static func paletaTexturasTask(
+    titulo: String,
+    tipo: String? = nil,
+    paletaHex: [String],
+    analisisEstetico: String? = nil,
+    sugerenciaTD: String,
+    fotoBase64: String? = nil,
+    locationContext: String? = nil
+  ) -> String {
+    var task = """
+    [FIELD_SCOUT_PALETA]
+    Título: \(titulo)
+    Tipo: \(tipo ?? "ambos")
+    Paleta HEX: \(paletaHex.joined(separator: ", "))
+    Sugerencia TouchDesigner: \(sugerenciaTD)
+    """
+    if let a = analisisEstetico, !a.isEmpty { task += "\nAnálisis Estético: \(a)" }
+    if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
+    if let img = fotoBase64, !img.isEmpty { task += "\n[ADJUNTO_FOTO_POV_BASE64:\(img)]" }
+    task += """
+    \nPor favor guarda esta paleta y notas en Obsidian (🎯 TouchDesigner/Paletas) con bloques de color y sugerencia de nodos, y despacha la muestra con foto a Telegram.
+    """
+    return task
+  }
+
+  /// Build a structured task string for inspeccionar_pantalla_o_pizarra
+  static func inspeccionPantallaPizarraTask(
+    contexto: String,
+    accionRequerida: String,
+    analisisVisual: String,
+    codigoODiagrama: String? = nil,
+    fotoBase64: String? = nil,
+    locationContext: String? = nil
+  ) -> String {
+    var task = """
+    [INSPECCION_VISUAL_CODE]
+    Contexto: \(contexto)
+    Acción Requerida: \(accionRequerida)
+    Análisis Visual: \(analisisVisual)
+    """
+    if let c = codigoODiagrama, !c.isEmpty { task += "\nCódigo o Diagrama:\n\(c)" }
+    if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
+    if let img = fotoBase64, !img.isEmpty { task += "\n[ADJUNTO_FOTO_POV_BASE64:\(img)]" }
+    task += """
+    \nInstrucciones para Hermes:
+    - Si la acción es 'convertir_a_mermaid', guarda el diagrama en Obsidian.
+    - Si la acción es 'generar_parche_git' o 'explicar_error', analiza el código en tu entorno local y envía la explicación detallada o diff a Telegram.
+    - Devuelve una síntesis hablada de 1 a 2 frases para las gafas.
+    """
+    return task
+  }
+
+  /// Build a structured task string for recordar_contacto_o_networking
+  static func recordarContactoTask(
+    nombre: String,
+    rolOEmpresa: String? = nil,
+    contextoCharla: String,
+    compromisoOProximoPaso: String? = nil,
+    tags: [String]? = nil,
+    fotoBase64: String? = nil,
+    locationContext: String? = nil
+  ) -> String {
+    var task = """
+    [CRM_NETWORKING]
+    Nombre: \(nombre)
+    Contexto de la Charla: \(contextoCharla)
+    """
+    if let r = rolOEmpresa, !r.isEmpty { task += "\nRol / Empresa: \(r)" }
+    if let comp = compromisoOProximoPaso, !comp.isEmpty { task += "\nCompromiso / Próximo Paso: \(comp)" }
+    if let t = tags, !t.isEmpty { task += "\nTags: \(t.joined(separator: ", "))" }
+    if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
+    if let img = fotoBase64, !img.isEmpty { task += "\n[ADJUNTO_FOTO_POV_BASE64:\(img)]" }
+    task += """
+    \nPor favor crea la ficha de contacto en Obsidian (🤝 Contactos/\(nombre).md), y agenda un recordatorio en Telegram para el próximo paso.
+    """
+    return task
+  }
+
+  /// Build a structured task string for registrar_gasto_o_habito
+  static func registroGastoHabitoTask(
+    tipoRegistro: String,
+    valor: String,
+    concepto: String,
+    categoria: String? = nil,
+    medioPago: String? = nil,
+    locationContext: String? = nil
+  ) -> String {
+    var task = """
+    [REGISTRO_DIARIO]
+    Tipo: \(tipoRegistro)
+    Valor: \(valor)
+    Concepto: \(concepto)
+    """
+    if let c = categoria, !c.isEmpty { task += "\nCategoría: \(c)" }
+    if let m = medioPago, !m.isEmpty { task += "\nMedio de Pago: \(m)" }
+    if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
+    task += """
+    \nPor favor agrega esta entrada a la tabla correspondiente en Obsidian (📊 Finanzas o Registro Diario). Devuelve una confirmación concisa con el total del día para ser hablada por las gafas.
+    """
+    return task
+  }
+
+  /// Build a structured task string for repasar_conceptos_vault
+  static func repasoConceptosVaultTask(
+    temaOCarpeta: String,
+    modo: String? = nil,
+    conceptoEspecifico: String? = nil,
+    locationContext: String? = nil
+  ) -> String {
+    var task = """
+    [WALK_AND_LEARN_VAULT]
+    Tema o Carpeta: \(temaOCarpeta)
+    Modo: \(modo ?? "pregunta_socratica")
+    """
+    if let c = conceptoEspecifico, !c.isEmpty { task += "\nConcepto Específico: \(c)" }
+    if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
+    task += """
+    \nPor favor busca en las notas de Obsidian sobre este tema y devuelve 2 a 3 conceptos clave con una pregunta socrática breve para que Gemini se la haga al usuario por las gafas.
+    """
+    return task
+  }
+
+  /// Build a structured task string for monitorear_proceso_o_render
+  static func monitorearProcesoTask(
+    proceso: String,
+    accion: String,
+    condicionAviso: String? = nil,
+    locationContext: String? = nil
+  ) -> String {
+    var task = """
+    [MONITOR_PROCESO_PC]
+    Proceso: \(proceso)
+    Acción: \(accion)
+    """
+    if let c = condicionAviso, !c.isEmpty { task += "\nCondición de Aviso: \(c)" }
+    if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
+    task += """
+    \nPor favor inspecciona el estado de los procesos locales en la PC (TouchDesigner render, contenedores Docker, scripts Python, uso GPU).
+    Devuelve un estado condensado en 1 o 2 frases para las gafas y, si se solicitó notificación, programa el mensaje a Telegram al terminar.
+    """
+    return task
+  }
+
+  /// Build a structured task string for control_ambiente_pc
+  static func controlAmbientePCTask(
+    accion: String,
+    objetivo: String? = nil,
+    locationContext: String? = nil
+  ) -> String {
+    var task = """
+    [CONTROL_AMBIENTE_PC]
+    Acción: \(accion)
+    """
+    if let obj = objetivo, !obj.isEmpty { task += "\nObjetivo: \(obj)" }
+    if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
+    task += """
+    \nEjecuta la orden de control de forma segura en la computadora y responde con 1 frase de confirmación para las gafas.
+    """
+    return task
+  }
+
+  /// Build a structured task string for donde_deje_mi_objeto
+  static func dondeDejeObjetoTask(
+    objeto: String,
+    contextoLugar: String? = nil,
+    timelineContext: String? = nil,
+    locationContext: String? = nil
+  ) -> String {
+    var task = """
+    [BUSQUEDA_OBJETO_TEMPORAL]
+    Objeto buscado: \(objeto)
+    """
+    if let c = contextoLugar, !c.isEmpty { task += "\nContexto de Lugar: \(c)" }
+    if let loc = locationContext, !loc.isEmpty { task += "\nUbicación Actual: \(loc)" }
+    if let tl = timelineContext, !tl.isEmpty { task += "\n\(tl)" }
+    task += """
+    \nInstrucciones:
+    1. Analiza el historial de escenas recientes capturadas por las gafas para estimar cuándo y dónde pudo haber quedado el objeto.
+    2. Responde a las gafas con una frase directa e intuitiva (ej: "Las llaves fueron vistas hace unos 15 minutos cerca de la mesa del living").
+    3. Si hay un fotograma relevante, envía la confirmación con la foto a Telegram.
+    """
+    return task
+  }
 }
+
+

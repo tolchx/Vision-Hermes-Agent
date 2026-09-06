@@ -69,6 +69,33 @@ class HermesToolCallRouter {
     case "consultar_briefing_diario":
       routeConsultarBriefingDiario(call: call, callId: callId, sendResponse: sendResponse)
 
+    case "delegar_investigacion_profunda":
+      routeDelegarInvestigacionProfunda(call: call, callId: callId, sendResponse: sendResponse)
+
+    case "capturar_paleta_y_texturas":
+      routeCapturarPaletaYTexturas(call: call, callId: callId, snapshot: snapshot, sendResponse: sendResponse)
+
+    case "inspeccionar_pantalla_o_pizarra":
+      routeInspeccionarPantallaOPizarra(call: call, callId: callId, snapshot: snapshot, sendResponse: sendResponse)
+
+    case "recordar_contacto_o_networking":
+      routeRecordarContactoONetworking(call: call, callId: callId, snapshot: snapshot, sendResponse: sendResponse)
+
+    case "registrar_gasto_o_habito":
+      routeRegistrarGastoOHabito(call: call, callId: callId, sendResponse: sendResponse)
+
+    case "repasar_conceptos_vault":
+      routeRepasarConceptosVault(call: call, callId: callId, sendResponse: sendResponse)
+
+    case "monitorear_proceso_o_render":
+      routeMonitorearProcesoORender(call: call, callId: callId, sendResponse: sendResponse)
+
+    case "control_ambiente_pc":
+      routeControlAmbientePC(call: call, callId: callId, sendResponse: sendResponse)
+
+    case "donde_deje_mi_objeto":
+      routeDondeDejeMiObjeto(call: call, callId: callId, sendResponse: sendResponse)
+
     default:
       NSLog("[HermesToolCall] Unknown tool: %@, falling back to execute", callName)
       routeExecute(call: call, callId: callId, sendResponse: sendResponse)
@@ -421,6 +448,266 @@ class HermesToolCallRouter {
       let result = await bridge.delegateTask(task: taskDesc, toolName: "consultar_briefing_diario")
       guard !Task.isCancelled else { return }
       let response = buildToolResponse(callId: callId, name: "consultar_briefing_diario", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeDelegarInvestigacionProfunda(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let tema = call.args["tema"] as? String ?? ""
+      let objetivo = call.args["objetivo"] as? String ?? ""
+      let entregarEn = call.args["entregar_en"] as? String
+      let profundidad = call.args["profundidad"] as? String
+      let locationContext = LocationManager.shared.contextString
+
+      let taskDesc = ToolDeclarations.investigacionProfundaTask(
+        tema: tema,
+        objetivo: objetivo,
+        entregarEn: entregarEn,
+        profundidad: profundidad,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "delegar_investigacion_profunda")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "delegar_investigacion_profunda", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeCapturarPaletaYTexturas(
+    call: GeminiFunctionCall, callId: String,
+    snapshot: UIImage?,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let titulo = call.args["titulo"] as? String ?? "Paleta de Color"
+      let tipo = call.args["tipo"] as? String
+      let paletaHex = call.args["paleta_hex"] as? [String] ?? []
+      let analisisEstetico = call.args["analisis_estetico"] as? String
+      let sugerenciaTD = call.args["sugerencia_touchdesigner"] as? String ?? ""
+      let locationContext = LocationManager.shared.contextString
+
+      var fotoBase64: String? = nil
+      if let snap = snapshot {
+        fotoBase64 = self.encodeSnapshotForTransmission(snap)
+      }
+
+      let taskDesc = ToolDeclarations.paletaTexturasTask(
+        titulo: titulo,
+        tipo: tipo,
+        paletaHex: paletaHex,
+        analisisEstetico: analisisEstetico,
+        sugerenciaTD: sugerenciaTD,
+        fotoBase64: fotoBase64,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "capturar_paleta_y_texturas")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "capturar_paleta_y_texturas", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeInspeccionarPantallaOPizarra(
+    call: GeminiFunctionCall, callId: String,
+    snapshot: UIImage?,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let contexto = call.args["contexto"] as? String ?? ""
+      let accionRequerida = call.args["accion_requerida"] as? String ?? "explicar_error"
+      let analisisVisual = call.args["analisis_visual"] as? String ?? ""
+      let codigoODiagrama = call.args["codigo_o_diagrama"] as? String
+      let locationContext = LocationManager.shared.contextString
+
+      var fotoBase64: String? = nil
+      if let snap = snapshot {
+        fotoBase64 = self.encodeSnapshotForTransmission(snap)
+      }
+
+      let taskDesc = ToolDeclarations.inspeccionPantallaPizarraTask(
+        contexto: contexto,
+        accionRequerida: accionRequerida,
+        analisisVisual: analisisVisual,
+        codigoODiagrama: codigoODiagrama,
+        fotoBase64: fotoBase64,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "inspeccionar_pantalla_o_pizarra")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "inspeccionar_pantalla_o_pizarra", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeRecordarContactoONetworking(
+    call: GeminiFunctionCall, callId: String,
+    snapshot: UIImage?,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let nombre = call.args["nombre"] as? String ?? ""
+      let rolOEmpresa = call.args["rol_o_empresa"] as? String
+      let contextoCharla = call.args["contexto_charla"] as? String ?? ""
+      let compromiso = call.args["compromiso_o_proximo_paso"] as? String
+      let tags = call.args["tags"] as? [String]
+      let locationContext = LocationManager.shared.contextString
+
+      var fotoBase64: String? = nil
+      if let snap = snapshot {
+        fotoBase64 = self.encodeSnapshotForTransmission(snap)
+      }
+
+      let taskDesc = ToolDeclarations.recordarContactoTask(
+        nombre: nombre,
+        rolOEmpresa: rolOEmpresa,
+        contextoCharla: contextoCharla,
+        compromisoOProximoPaso: compromiso,
+        tags: tags,
+        fotoBase64: fotoBase64,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "recordar_contacto_o_networking")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "recordar_contacto_o_networking", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeRegistrarGastoOHabito(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let tipoRegistro = call.args["tipo_registro"] as? String ?? "gasto"
+      let valor = call.args["valor"] as? String ?? ""
+      let concepto = call.args["concepto"] as? String ?? ""
+      let categoria = call.args["categoria"] as? String
+      let medioPago = call.args["medio_pago"] as? String
+      let locationContext = LocationManager.shared.contextString
+
+      let taskDesc = ToolDeclarations.registroGastoHabitoTask(
+        tipoRegistro: tipoRegistro,
+        valor: valor,
+        concepto: concepto,
+        categoria: categoria,
+        medioPago: medioPago,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "registrar_gasto_o_habito")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "registrar_gasto_o_habito", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeRepasarConceptosVault(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let temaOCarpeta = call.args["tema_o_carpeta"] as? String ?? ""
+      let modo = call.args["modo"] as? String
+      let conceptoEspecifico = call.args["concepto_especifico"] as? String
+      let locationContext = LocationManager.shared.contextString
+
+      let taskDesc = ToolDeclarations.repasoConceptosVaultTask(
+        temaOCarpeta: temaOCarpeta,
+        modo: modo,
+        conceptoEspecifico: conceptoEspecifico,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "repasar_conceptos_vault")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "repasar_conceptos_vault", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeMonitorearProcesoORender(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let proceso = call.args["proceso"] as? String ?? "todos"
+      let accion = call.args["accion"] as? String ?? "consultar_progreso"
+      let condicionAviso = call.args["condicion_aviso"] as? String
+      let locationContext = LocationManager.shared.contextString
+
+      let taskDesc = ToolDeclarations.monitorearProcesoTask(
+        proceso: proceso,
+        accion: accion,
+        condicionAviso: condicionAviso,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "monitorear_proceso_o_render")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "monitorear_proceso_o_render", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeControlAmbientePC(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let accion = call.args["accion"] as? String ?? ""
+      let objetivo = call.args["objetivo"] as? String
+      let locationContext = LocationManager.shared.contextString
+
+      let taskDesc = ToolDeclarations.controlAmbientePCTask(
+        accion: accion,
+        objetivo: objetivo,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "control_ambiente_pc")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "control_ambiente_pc", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeDondeDejeMiObjeto(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let objeto = call.args["objeto"] as? String ?? "objeto"
+      let contextoLugar = call.args["contexto_lugar"] as? String
+      let timelineContext = TemporalVisualMemory.shared.buildTimelineContext()
+      let locationContext = LocationManager.shared.contextString
+
+      let taskDesc = ToolDeclarations.dondeDejeObjetoTask(
+        objeto: objeto,
+        contextoLugar: contextoLugar,
+        timelineContext: timelineContext,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "donde_deje_mi_objeto")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "donde_deje_mi_objeto", result: result)
       sendResponse(response)
       inFlightTasks.removeValue(forKey: callId)
     }

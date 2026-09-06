@@ -1,4 +1,4 @@
-# VisionHermes
+﻿# VisionHermes
 
 ![VisionHermes](assets/teaserimage.png)
 
@@ -12,9 +12,9 @@ Built on [Meta Wearables DAT SDK](https://github.com/facebook/meta-wearables-dat
 
 ---
 
-## 🌟 NEW: Gemini + Hermes Tool Ecosystem (v2.5)
+## 🌟 NEW: Gemini + Hermes Tool Ecosystem (v2.6)
 
-VisionHermes now features **12+ specialized tools** connecting Gemini's real-time voice+vision intelligence to Hermes Agent's execution power, remote PC management, Obsidian vault, and Telegram:
+VisionHermes now features **21+ specialized tools** connecting Gemini's real-time voice+vision intelligence to Hermes Agent's execution power, remote PC management, Obsidian vault, and Telegram:
 
 | Tool | What it does | Gemini contributes | Hermes / Device executes |
 |------|-------------|-------------------|--------------------------|
@@ -25,6 +25,15 @@ VisionHermes now features **12+ specialized tools** connecting Gemini's real-tim
 | `consultar_briefing_diario` | **Daily Audio Briefing** | Delivers 30-45s spoken morning briefing to glasses | Queries Obsidian daily notes, pending tasks, and recent commits |
 | `consultar_estado_hermes` | **Hermes Introspection** | Checks active sessions, running subagents, and memory | Returns live status via Cloudflare tunnel |
 | `controlar_tarea_hermes` | **Process & Task Control** | Understands stop/cancel/pause voice commands | Halts or pauses background tasks and subagents |
+| `delegar_investigacion_profunda` | **Autonomous Deep Research** | Speaks 1-sentence dispatch confirmation | Spawns background subagent on PC, creates prototype, logs report to Telegram & Obsidian |
+| `capturar_paleta_y_texturas` | **Field Scout 2.0 (Colors & Textures)** | Extracts 3-5 HEX color codes, lighting & noise | Saves palette to Obsidian (`🎯 TouchDesigner/Paletas/`) and sends swatches to Telegram |
+| `inspeccionar_pantalla_o_pizarra` | **Screen & Whiteboard Inspector** | Transcribes traceback, code, or architecture diagram | Converts to Mermaid/fixes, saves to Vault or generates patch |
+| `recordar_contacto_o_networking` | **Personal CRM & Networking** | Formulates contact card + follow-up promise | Saves to Obsidian (`🤝 Contactos/`) and schedules Telegram follow-up alert |
+| `registrar_gasto_o_habito` | **Voice-First Finance & Habit Tracker** | Confirms logged amount & running daily balance | Adds row to Obsidian Dataview financial tables |
+| `repasar_conceptos_vault` | **Walk & Learn (Active Study)** | Quizzes the user conversationally with Socratic questions | Queries Obsidian notes & tracks studied concepts |
+| `monitorear_proceso_o_render` | **Render & Process Telemetry** | Reports % progress, ETA, and GPU load to glasses | Monitors TD renders / Docker and sends Telegram alert when finished |
+| `control_ambiente_pc` | **PC Shortcuts & System Control** | Speaks 1-sentence execution confirmation | Locks PC screen, suspends workstation, launches `.toe` projects |
+| `donde_deje_mi_objeto` | **Temporal Visual Memory** | Estimates time & location from recent scene buffer | Finds candidate keyframe and sends photo to Telegram |
 | `gemelo_guardar_respuesta` | **Avatar Personal** | Asks deep personal questions, analyzes emotions & speech traits | Saves structured responses + personality profile to Obsidian |
 | `guardar_nota_rapida` | **Voice-to-Vault Notes** | Takes dictation with ambient context | Creates markdown files in Obsidian `📥 Inbox` |
 | `buscar_en_vault` | **Semantic Vault Search** | Natural language queries | Searches Obsidian vault and speaks excerpts |
@@ -86,7 +95,7 @@ Put on your glasses, tap the AI button, and talk:
 - **"Add milk to my shopping list"** -- delegates to Hermes Agent via `execute`
 - **"Send a message to John saying I'll be late"** -- routes through Hermes Agent
 - **"Search for the best coffee shops nearby"** -- web search via `execute`, results spoken back
-- **NEW: "Let's do today's deep question"** -- starts an Avatar Personal session, Gemini asks profound questions about your life and values, saves to Obsidian
+- **NEW: "Let's do today's deep question"** -- starts a Avatar Personal session, Gemini asks profound questions about your life and values, saves to Obsidian
 - **NEW: "Save this idea for later"** -- `guardar_nota_rapida` instantly creates a note in your vault
 - **NEW: "What do I know about TouchDesigner noise?"** -- `buscar_en_vault` searches your entire Obsidian vault and Gemini reads the answer aloud
 - **NEW: "Remember this place"** -- `guardar_observacion` captures what Gemini sees through the camera and saves it as a visual note
@@ -117,7 +126,7 @@ Every day, a deep personal question is sent via Telegram (or asked directly by G
 | ⚖️ Ethics & Boundaries | 5 | Moral lines |
 | ☠️ Death & Transcendence | 5 | Legacy |
 
-After each session, the profile accumulates: detected traits, fundamental values, linguistic patterns, and emotional tendencies. The goal: an Avatar Personal that reflects how the user talks, feels, and reacts.
+After each session, the profile accumulates: detected traits, fundamental values, linguistic patterns, and emotional tendencies. The goal: a digital twin that talks, feels, and reacts like the user.
 
 ---
 
@@ -171,7 +180,7 @@ Gemini Live API (WebSocket)
        |         |               │    → 🖥️ Sessions, subagents, control │
        |         |               │                                      │
        |         |               │  gemelo_guardar_respuesta            │
-       |         |               │    → 🧬 Avatar Personal perfil       │
+       |         |               │    → 🧬 Avatar Personal perfil        │
        |         |               │                                      │
        |         |               │  guardar_nota_rapida / buscar_vault  │
        |         |               │    → 📥 Inbox / 🔍 Vault Search       │
@@ -390,7 +399,7 @@ All source code is in `samples/CameraAccess/CameraAccess/`:
 | `Gemini/ChatModels.swift` | ChatSession, ChatMessage, Role data models |
 | `Gemini/ChatHistoryManager.swift` | Persists chat sessions, exports to Markdown, vault sync |
 | `Gemini/GeminiSessionViewModel.swift` | Session lifecycle, tool call wiring, transcript state, history manager integration |
-| `Hermes/ToolCallModels.swift` | **12+ tool declarations** (Telegram reports, remote scripts, walk & talk, field scout, daily briefing, status control, etc.) |
+| `Hermes/ToolCallModels.swift` | **6 tool declarations** (execute, gemelo_guardar_respuesta, guardar_nota_rapida, buscar_en_vault, guardar_observacion, exportar_chat_md) |
 | `Hermes/HermesBridge.swift` | HTTP client for Hermes Agent gateway (chat completions endpoint) |
 | `Hermes/ToolCallRouter.swift` | Routes Gemini tool calls to correct handler, export sharing |
 | `Views/ChatHistoryView.swift` | Chat history UI with MD export + vault sync for each session |
@@ -558,3 +567,4 @@ The debug APK is built via GitHub Actions on every push to `main`.
 ## License
 
 This source code is licensed under the license found in the [LICENSE](LICENSE) file in the root directory of this source tree.
+
