@@ -1,5 +1,9 @@
 .DS_Store
 
+# iOS
+samples/CameraAccess/CameraAccess/Secrets.swift
+**/Secrets.swift
+
 # Android
 samples/CameraAccessAndroid/app/src/main/java/**/Secrets.kt
 samples/CameraAccessAndroid/local.properties

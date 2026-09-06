@@ -24,6 +24,7 @@ final class SettingsManager: ObservableObject {
     case offlineModelURL
     case isOfflineModelInstalled
     case memories
+    case telegramChatId
   }
 
   private init() {}
@@ -130,6 +131,13 @@ final class SettingsManager: ObservableObject {
     set { defaults.set(newValue, forKey: Key.memories.rawValue) }
   }
 
+  // MARK: - Telegram
+
+  var telegramChatId: String {
+    get { defaults.string(forKey: Key.telegramChatId.rawValue) ?? "" }
+    set { defaults.set(newValue, forKey: Key.telegramChatId.rawValue) }
+  }
+
   // MARK: - Reset
 
   func resetAll() {
@@ -137,7 +145,7 @@ final class SettingsManager: ObservableObject {
                 .hermesHookToken, .hermesGatewayToken, .webrtcSignalingURL,
                 .activeAIBackend, .autoReconnect, .showTranscripts, .enableWakeWord,
                 .wakePhrase, .autoEndTimeout, .ttsVoice, .activationSound, .offlineModelURL,
-                .isOfflineModelInstalled, .memories] {
+                .isOfflineModelInstalled, .memories, .telegramChatId] {
       defaults.removeObject(forKey: key.rawValue)
     }
   }

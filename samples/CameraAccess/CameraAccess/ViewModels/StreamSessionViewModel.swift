@@ -10,15 +10,22 @@
 // StreamSessionViewModel.swift
 //
 // Core view model demonstrating video streaming from Meta wearable devices using the DAT SDK.
-// This class showcases the key streaming patterns: device selection, session management,
-// video frame handling, photo capture, and error handling.
+// Upgraded to DAT SDK 0.9.0 model: DeviceSession owns the connection to the glasses,
+// Camera owns the camera hardware, and camera.stream carries the video frames.
+// Features auto-reconnection on mid-call drop without tearing down the audio/call session.
 //
 
+import AVFoundation
+import CoreImage
+import CoreMedia
+import CoreVideo
 import MWDATCamera
 import MWDATCore
 import SwiftUI
+import UIKit
+import VideoToolbox
 
-enum StreamingStatus {
+enum StreamingStatus: Equatable {
   case streaming
   case waiting
   case stopped
@@ -27,6 +34,13 @@ enum StreamingStatus {
 enum StreamingMode {
   case glasses
   case iPhone
+}
+
+enum GlassesIssue: Equatable {
+  case sdkUnavailable
+  case permissionNeeded
+  case hingesClosed
+  case reconnecting
 }
 
 @MainActor
@@ -39,6 +53,7 @@ class StreamSessionViewModel: ObservableObject {
   @Published var hasActiveDevice: Bool = false
   @Published var streamingMode: StreamingMode = .glasses
   @Published var selectedResolution: StreamingResolution = .low
+  @Published var glassesIssue: GlassesIssue?
 
   var isStreaming: Bool {
     streamingStatus != .stopped
@@ -63,27 +78,34 @@ class StreamSessionViewModel: ObservableObject {
   // WebRTC Live streaming integration
   var webrtcSessionVM: WebRTCSessionViewModel?
 
-  // The core DAT SDK StreamSession - handles all streaming operations
-  private var streamSession: StreamSession
-  // Listener tokens are used to manage DAT SDK event subscriptions
+  // DAT 0.9 device session and camera instances
+  private var deviceSession: DeviceSession?
+  private var camera: Camera?
+
+  // Stream state tracking
+  private var wantsStream: Bool = false
+  private var userWantsCall: Bool = false
+  private var reconnectTask: Task<Void, Never>?
+
+  // Listener tokens
+  private var sessionStateListenerToken: AnyListenerToken?
   private var stateListenerToken: AnyListenerToken?
   private var videoFrameListenerToken: AnyListenerToken?
   private var errorListenerToken: AnyListenerToken?
   private var photoDataListenerToken: AnyListenerToken?
+
   private let wearables: WearablesInterface
   private let deviceSelector: AutoDeviceSelector
   private var deviceMonitorTask: Task<Void, Never>?
   private var iPhoneCameraManager: IPhoneCameraManager?
 
+  private let cpuCIContext = CIContext(options: [.useSoftwareRenderer: true])
+  private let videoDecoder = VideoDecoder()
+  private let requestedFrameRate: UInt = 24
+
   init(wearables: WearablesInterface) {
     self.wearables = wearables
-    // Let the SDK auto-select from available devices
     self.deviceSelector = AutoDeviceSelector(wearables: wearables)
-    let config = StreamSessionConfig(
-      videoCodec: VideoCodec.raw,
-      resolution: StreamingResolution.low,
-      frameRate: 24)
-    streamSession = StreamSession(streamSessionConfig: config, deviceSelector: deviceSelector)
 
     // Monitor device availability
     deviceMonitorTask = Task { @MainActor in
@@ -92,80 +114,54 @@ class StreamSessionViewModel: ObservableObject {
       }
     }
 
-    attachListeners()
+    setupVideoDecoder()
   }
 
-  /// Recreate the StreamSession with the current selectedResolution.
-  /// Only call when not actively streaming.
+  private func setupVideoDecoder() {
+    videoDecoder.setFrameCallback { [weak self] decodedFrame in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        let pixelBuffer = decodedFrame.pixelBuffer
+        let width = CVPixelBufferGetWidth(pixelBuffer)
+        let height = CVPixelBufferGetHeight(pixelBuffer)
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let rect = CGRect(x: 0, y: 0, width: width, height: height)
+        if let cgImage = self.cpuCIContext.createCGImage(ciImage, from: rect) {
+          let image = UIImage(cgImage: cgImage)
+          if UIApplication.shared.applicationState != .background {
+            self.currentVideoFrame = image
+          }
+          self.geminiSessionVM?.sendVideoFrameIfThrottled(image: image)
+          self.webrtcSessionVM?.pushVideoFrame(image)
+          SessionRecorder.shared.appendVideoFrame(image)
+        }
+      }
+    }
+  }
+
+  /// Store the resolution to use for the next stream. In 0.9 the config is applied
+  /// when the camera is added, so this only takes effect when not streaming.
   func updateResolution(_ resolution: StreamingResolution) {
     guard !isStreaming else { return }
     selectedResolution = resolution
-    let config = StreamSessionConfig(
-      videoCodec: VideoCodec.raw,
-      resolution: resolution,
-      frameRate: 24)
-    streamSession = StreamSession(streamSessionConfig: config, deviceSelector: deviceSelector)
-    attachListeners()
     NSLog("[Stream] Resolution changed to %@", resolutionLabel)
   }
 
-  private func attachListeners() {
-    // Subscribe to session state changes using the DAT SDK listener pattern
-    stateListenerToken = streamSession.statePublisher.listen { [weak self] state in
-      Task { @MainActor [weak self] in
-        self?.updateStatusFromState(state)
-      }
-    }
-
-    // Subscribe to video frames from the device camera
-    videoFrameListenerToken = streamSession.videoFramePublisher.listen { [weak self] videoFrame in
-      Task { @MainActor [weak self] in
-        guard let self else { return }
-
-        if let image = videoFrame.makeUIImage() {
-          self.currentVideoFrame = image
-          if !self.hasReceivedFirstFrame {
-            self.hasReceivedFirstFrame = true
-          }
-          // Forward video frames to Gemini Live (throttled internally to ~1fps)
-          self.geminiSessionVM?.sendVideoFrameIfThrottled(image: image)
-          // Forward video frames to WebRTC (no throttle — WebRTC handles bitrate)
-          self.webrtcSessionVM?.pushVideoFrame(image)
-        }
-      }
-    }
-
-    // Subscribe to streaming errors
-    errorListenerToken = streamSession.errorPublisher.listen { [weak self] error in
-      Task { @MainActor [weak self] in
-        guard let self else { return }
-        // Suppress device-not-found errors when user hasn't started streaming yet
-        if self.streamingStatus == .stopped {
-          if case .deviceNotConnected = error { return }
-          if case .deviceNotFound = error { return }
-        }
-        let newErrorMessage = formatStreamingError(error)
-        if newErrorMessage != self.errorMessage {
-          showError(newErrorMessage)
-        }
-      }
-    }
-
-    updateStatusFromState(streamSession.state)
-
-    // Subscribe to photo capture events
-    photoDataListenerToken = streamSession.photoDataPublisher.listen { [weak self] photoData in
-      Task { @MainActor [weak self] in
-        guard let self else { return }
-        if let uiImage = UIImage(data: photoData.data) {
-          self.capturedPhoto = uiImage
-          self.showPhotoPreview = true
-        }
-      }
-    }
+  private func streamConfig() -> StreamConfiguration {
+    StreamConfiguration(
+      videoCodec: VideoCodec.raw,
+      resolution: selectedResolution,
+      frameRate: requestedFrameRate
+    )
   }
 
+  // MARK: - Streaming Lifecycle
+
   func handleStartStreaming() async {
+    glassesIssue = nil
+    userWantsCall = true
+    reconnectTask?.cancel()
+
     let permission = Permission.camera
     do {
       let status = try await wearables.checkPermissionStatus(permission)
@@ -178,27 +174,230 @@ class StreamSessionViewModel: ObservableObject {
         await startSession()
         return
       }
-      showError("Permission denied")
+      glassesIssue = .permissionNeeded
+      showError("Camera permission denied")
     } catch {
-      showError("Permission error: \(error.description)")
+      let text = String(describing: error).lowercased()
+      if text.contains("powered off") || text.contains("disconnected") || text.contains("no device") {
+        NSLog("[Stream] glasses unavailable, waiting: %@", String(describing: error))
+        glassesIssue = nil
+      } else {
+        glassesIssue = .reconnecting
+      }
     }
   }
 
+  /// Creates and starts the DeviceSession, then streams once it reaches `.started`.
   func startSession() async {
-    await streamSession.start()
+    guard deviceSession == nil else {
+      wantsStream = true
+      if deviceSession?.state == .started, camera == nil {
+        beginStream()
+      }
+      return
+    }
+
+    wantsStream = true
+    do {
+      let session = try wearables.createSession(deviceSelector: deviceSelector)
+      deviceSession = session
+      observeSession(session)
+      streamingStatus = .waiting
+      try session.start()
+    } catch {
+      glassesIssue = mapDeviceSessionError(error)
+      deviceSession = nil
+      if userWantsCall {
+        streamingStatus = .waiting
+        scheduleReconnect()
+      } else {
+        wantsStream = false
+        streamingStatus = .stopped
+      }
+    }
   }
 
-  private func showError(_ message: String) {
-    errorMessage = message
-    showError = true
+  private func observeSession(_ session: DeviceSession) {
+    sessionStateListenerToken = session.statePublisher.listen { [weak self] state in
+      Task { @MainActor [weak self] in
+        self?.handleSessionState(state)
+      }
+    }
   }
 
+  private func handleSessionState(_ state: DeviceSessionState) {
+    switch state {
+    case .started:
+      if wantsStream, camera == nil {
+        beginStream()
+      }
+    case .idle, .stopped:
+      camera = nil
+      deviceSession = nil
+      currentVideoFrame = nil
+      if userWantsCall {
+        glassesIssue = .reconnecting
+        streamingStatus = .waiting
+        scheduleReconnect()
+      } else {
+        wantsStream = false
+        streamingStatus = .stopped
+      }
+    case .starting, .stopping, .paused:
+      streamingStatus = .waiting
+    }
+  }
+
+  /// Adds a camera to the started session and wires its stream's listeners.
+  private func beginStream() {
+    guard let session = deviceSession, session.state == .started else { return }
+    do {
+      guard let newCamera = try session.addCamera(config: streamConfig()) else {
+        glassesIssue = .reconnecting
+        return
+      }
+      camera = newCamera
+      attachStreamListeners(to: newCamera.stream)
+      newCamera.stream.start()
+    } catch {
+      camera = nil
+      glassesIssue = mapDeviceSessionError(error)
+    }
+  }
+
+  private func attachStreamListeners(to stream: MWDATCamera.Stream) {
+    // Stream state listener
+    stateListenerToken = stream.statePublisher.listen { [weak self] state in
+      Task { @MainActor [weak self] in
+        self?.updateStatusFromState(state)
+      }
+    }
+
+    // Video frame listener
+    videoFrameListenerToken = stream.videoFramePublisher.listen { [weak self] videoFrame in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+
+        if let image = videoFrame.makeUIImage() {
+          self.currentVideoFrame = image
+          if !self.hasReceivedFirstFrame {
+            self.hasReceivedFirstFrame = true
+          }
+          // Forward video frames to Gemini Live (throttled internally to ~1fps)
+          self.geminiSessionVM?.sendVideoFrameIfThrottled(image: image)
+          // Forward video frames to WebRTC
+          self.webrtcSessionVM?.pushVideoFrame(image)
+        }
+      }
+    }
+
+    // Stream error listener
+    errorListenerToken = stream.errorPublisher.listen { [weak self] error in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        switch error {
+        case .deviceNotConnected, .deviceNotFound:
+          self.glassesIssue = nil
+        case .hingesClosed:
+          self.glassesIssue = .hingesClosed
+        case .permissionDenied:
+          self.glassesIssue = .permissionNeeded
+        default:
+          self.glassesIssue = .reconnecting
+        }
+
+        // Only show modal alerts when app is active
+        if UIApplication.shared.applicationState == .active && self.streamingStatus != .stopped {
+          let msg = error.localizedDescription
+          if !msg.isEmpty && msg != self.errorMessage {
+            self.showError(msg)
+          }
+        }
+      }
+    }
+
+    // Photo capture listener
+    photoDataListenerToken = stream.photoDataPublisher.listen { [weak self] photoData in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        if let uiImage = UIImage(data: photoData.data) {
+          self.capturedPhoto = uiImage
+          self.showPhotoPreview = true
+        }
+      }
+    }
+  }
+
+  /// Stops camera and ends session.
   func stopSession() async {
     if streamingMode == .iPhone {
       stopIPhoneSession()
       return
     }
-    await streamSession.stop()
+
+    userWantsCall = false
+    reconnectTask?.cancel()
+    reconnectTask = nil
+    wantsStream = false
+
+    if let camera {
+      camera.stop()
+    }
+    deviceSession?.stop()
+    camera = nil
+    deviceSession = nil
+    streamingStatus = .stopped
+  }
+
+  /// Auto-reconnect loop on a 1.5s cadence when stream drops mid-call
+  private func scheduleReconnect() {
+    guard userWantsCall else { return }
+    reconnectTask?.cancel()
+    reconnectTask = Task { @MainActor [weak self] in
+      try? await Task.sleep(nanoseconds: 1_500_000_000)
+      guard let self, !Task.isCancelled, self.userWantsCall,
+            self.streamingStatus != .streaming else { return }
+      NSLog("[Stream] auto-reconnecting glasses...")
+      if self.deviceSession == nil {
+        await self.startSession()
+      } else if self.camera == nil, self.deviceSession?.state == .started {
+        self.beginStream()
+      }
+      if self.streamingStatus != .streaming, self.userWantsCall {
+        self.scheduleReconnect()
+      }
+    }
+  }
+
+  private func mapDeviceSessionError(_ error: Error) -> GlassesIssue? {
+    if let deviceError = error as? DeviceSessionError {
+      switch deviceError {
+      case .noEligibleDevice:
+        return nil
+      default:
+        return .reconnecting
+      }
+    }
+    return .reconnecting
+  }
+
+  private func updateStatusFromState(_ state: StreamSessionState) {
+    switch state {
+    case .stopped:
+      currentVideoFrame = nil
+      if userWantsCall {
+        glassesIssue = .reconnecting
+        streamingStatus = .waiting
+        scheduleReconnect()
+      } else {
+        streamingStatus = .stopped
+      }
+    case .waitingForDevice, .starting, .stopping, .paused:
+      streamingStatus = .waiting
+    case .streaming:
+      glassesIssue = nil
+      streamingStatus = .streaming
+    }
   }
 
   // MARK: - iPhone Camera Mode
@@ -224,6 +423,7 @@ class StreamSessionViewModel: ObservableObject {
         }
         self.geminiSessionVM?.sendVideoFrameIfThrottled(image: image)
         self.webrtcSessionVM?.pushVideoFrame(image)
+        SessionRecorder.shared.appendVideoFrame(image)
       }
     }
     camera.start()
@@ -242,13 +442,14 @@ class StreamSessionViewModel: ObservableObject {
     NSLog("[Stream] iPhone camera mode stopped")
   }
 
-  func dismissError() {
-    showError = false
-    errorMessage = ""
-  }
+  // MARK: - Photo & UI Helpers
 
   func capturePhoto() {
-    streamSession.capturePhoto(format: .jpeg)
+    guard let stream = camera?.stream else {
+      showError("Stream not active for photo capture")
+      return
+    }
+    _ = stream.capturePhoto(format: .jpeg)
   }
 
   func dismissPhotoPreview() {
@@ -256,38 +457,13 @@ class StreamSessionViewModel: ObservableObject {
     capturedPhoto = nil
   }
 
-  private func updateStatusFromState(_ state: StreamSessionState) {
-    switch state {
-    case .stopped:
-      currentVideoFrame = nil
-      streamingStatus = .stopped
-    case .waitingForDevice, .starting, .stopping, .paused:
-      streamingStatus = .waiting
-    case .streaming:
-      streamingStatus = .streaming
-    }
+  private func showError(_ message: String) {
+    errorMessage = message
+    showError = true
   }
 
-  private func formatStreamingError(_ error: StreamSessionError) -> String {
-    switch error {
-    case .internalError:
-      return "An internal error occurred. Please try again."
-    case .deviceNotFound:
-      return "Device not found. Please ensure your device is connected."
-    case .deviceNotConnected:
-      return "Device not connected. Please check your connection and try again."
-    case .timeout:
-      return "The operation timed out. Please try again."
-    case .videoStreamingError:
-      return "Video streaming failed. Please try again."
-    case .audioStreamingError:
-      return "Audio streaming failed. Please try again."
-    case .permissionDenied:
-      return "Camera permission denied. Please grant permission in Settings."
-    case .hingesClosed:
-      return "The hinges on the glasses were closed. Please open the hinges and try again."
-    @unknown default:
-      return "An unknown streaming error occurred."
-    }
+  func dismissError() {
+    showError = false
+    errorMessage = ""
   }
 }

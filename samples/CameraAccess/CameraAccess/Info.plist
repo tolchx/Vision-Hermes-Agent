@@ -70,7 +70,11 @@
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>This app uses speech recognition to listen for your wake phrase and activate the assistant hands-free.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>This app needs access to save photos captured from your glasses.</string>
+	<string>This app needs access to save photos and POV demo videos captured from your smart glasses.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to save photos and POV demo videos captured from your smart glasses.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need your location to provide the AI with context about the places, cities, and businesses around you.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

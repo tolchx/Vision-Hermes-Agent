@@ -136,6 +136,8 @@ class AudioManager {
     inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputNativeFormat) { [weak self] buffer, _ in
       guard let self else { return }
 
+      SessionRecorder.shared.appendMicAudioBuffer(buffer)
+
       tapCount += 1
       let pcmData: Data
 
@@ -206,6 +208,7 @@ class AudioManager {
     }
 
     playerNode.scheduleBuffer(buffer)
+    SessionRecorder.shared.appendAIAudioBuffer(buffer)
     if !playerNode.isPlaying {
       playerNode.play()
     }

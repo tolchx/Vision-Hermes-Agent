@@ -10,6 +10,8 @@ class WakeWordDetector: ObservableObject {
     @Published var errorMessage: String?
 
     var onWakeWordDetected: (() -> Void)?
+    var onStopDetected: (() -> Void)?
+    var onStopVideoDetected: (() -> Void)?
 
     private let audioEngine = AVAudioEngine()
     private var recognitionTask: SFSpeechRecognitionTask?
@@ -105,8 +107,21 @@ class WakeWordDetector: ObservableObject {
             let transcription = result.bestTranscription.formattedString.lowercased()
             let wakePhrase = self.settings.wakePhrase.lowercased()
 
-            // Check if the wake phrase appears anywhere in the transcription
-            if transcription.contains(wakePhrase) {
+            // Check for stop commands first (stop video vs stop audio)
+            if self.matchesStopVideo(text: transcription) {
+                self.lastDetectedPhrase = transcription
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                self.onStopVideoDetected?()
+                return
+            } else if self.matchesStop(text: transcription) {
+                self.lastDetectedPhrase = transcription
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                self.onStopDetected?()
+                return
+            }
+
+            // Check if the wake phrase appears with word boundary matching
+            if self.matchesPhrase(text: transcription, phrase: wakePhrase) {
                 self.lastDetectedPhrase = transcription
                 self.isProcessing = true
                 // Brief haptic feedback
@@ -145,5 +160,33 @@ class WakeWordDetector: ObservableObject {
                 }
             }
         }
+    }
+
+    // MARK: - Word Boundary Matching Helpers
+
+    func matchesPhrase(text: String, phrase: String) -> Bool {
+        let cleanText = text.lowercased()
+        let cleanPhrase = phrase.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanPhrase.isEmpty else { return false }
+        let pattern = "\\b" + NSRegularExpression.escapedPattern(for: cleanPhrase).replacingOccurrences(of: "\\ ", with: "\\s+") + "\\b"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+            let range = NSRange(cleanText.startIndex..., in: cleanText)
+            return regex.firstMatch(in: cleanText, options: [], range: range) != nil
+        }
+        return cleanText.contains(cleanPhrase)
+    }
+
+    func matchesStop(text: String) -> Bool {
+        let stopKeywords = ["stop", "quiet", "silence", "enough", "para", "basta", "silencio", "cállate"]
+        let stopPhrases = ["be quiet", "shut up", "ok stop", "okay stop", "stop talking", "para de hablar", "guarda silencio"]
+        let lower = text.lowercased()
+        if stopPhrases.contains(where: { lower.contains($0) }) { return true }
+        let words = Set(lower.split(whereSeparator: { !$0.isLetter }).map(String.init))
+        return !words.isDisjoint(with: Set(stopKeywords))
+    }
+
+    func matchesStopVideo(text: String) -> Bool {
+        let lower = text.lowercased()
+        return lower.contains("stop video") || lower.contains("detener video") || lower.contains("cerrar video") || lower.contains("terminar llamada")
     }
 }

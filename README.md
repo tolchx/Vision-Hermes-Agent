@@ -4,10 +4,6 @@
 
 A real-time AI assistant for **Meta Ray-Ban smart glasses** and **iPhone**, adapted from VisionClaw to work with **Hermes Agent**. See what you see, hear what you say, and take actions on your behalf -- all through voice.
 
-Attribution:
-- Based on [`Intent-Lab/VisionClaw`](https://github.com/Intent-Lab/VisionClaw)
-- Some UI parts were adapted from [`rayl15/OpenVision`](https://github.com/rayl15/OpenVision)
-
 ![Cover](assets/cover.png)
 
 Built on [Meta Wearables DAT SDK](https://github.com/facebook/meta-wearables-dat-ios) (iOS) / [DAT Android SDK](https://github.com/facebook/meta-wearables-dat-android) (Android) + [Gemini Live API](https://ai.google.dev/gemini-api/docs/live) + [Hermes Agent](https://hermes-agent.nousresearch.com) (tool execution).
@@ -16,20 +12,50 @@ Built on [Meta Wearables DAT SDK](https://github.com/facebook/meta-wearables-dat
 
 ---
 
-## 🌟 NEW: Gemini + Hermes Tool Ecosystem (v2.0)
+## 🌟 NEW: Gemini + Hermes Tool Ecosystem (v2.5)
 
-VisionHermes now has **6 specialized tools** that connect Gemini's real-time voice+vision intelligence to Hermes Agent's execution power and your Obsidian vault:
+VisionHermes now features **12+ specialized tools** connecting Gemini's real-time voice+vision intelligence to Hermes Agent's execution power, remote PC management, Obsidian vault, and Telegram:
 
-| Tool | What it does | Gemini contributes | Hermes executes |
-|------|-------------|-------------------|-----------------|
-| `execute` | General-purpose actions | Understands the request | Web search, messages, reminders, etc. |
-| `gemelo_guardar_respuesta` | **Avatar Personal** — builds an evolving profile of your personality | Asks deep questions, detects emotions and speech patterns | Saves structured responses + analysis to Obsidian |
-| `guardar_nota_rapida` | Voice-to-vault notes | Takes dictation, adds context | Creates markdown files in your vault's 📥 Inbox |
-| `buscar_en_vault` | Semantic search of your knowledge | Interprets natural language queries | Searches Obsidian vault and returns relevant excerpts |
-| `guardar_observacion` | Visual memory from camera | Describes what it sees through the glasses camera | Saves timestamped observations with visual descriptions to vault |
-| `exportar_chat_md` | Full conversation export | Summarizes the chat when asked | Exports as markdown + optionally saves to Obsidian |
+| Tool | What it does | Gemini contributes | Hermes / Device executes |
+|------|-------------|-------------------|--------------------------|
+| `enviar_reporte_telegram` | **Telegram Executive Dispatch** | Compiles structured report, takes POV photo | Pushes markdown + high-res POV photo to Telegram |
+| `ejecutar_script_remoto` | **Remote PC Terminal & Scripts** | Speaks 1-sentence vocal summary to glasses | Runs shell, Python, Git, Docker, or TouchDesigner on PC & sends logs to Telegram |
+| `resumen_walk_and_talk` | **Walk & Talk Brainstorm Wrap-up** | Synthesizes ideas & extracts action items/to-dos | Saves note to Obsidian (`🧠 Ideas`) and pushes summary to Telegram |
+| `guardar_referencia_visual` | **Field Scout (TouchDesigner)** | Analyzes composition, suggests TouchDesigner nodes (Feedback, GLSL, Noise) | Saves to Obsidian (`🎯 TouchDesigner`) & sends photo to Telegram |
+| `consultar_briefing_diario` | **Daily Audio Briefing** | Delivers 30-45s spoken morning briefing to glasses | Queries Obsidian daily notes, pending tasks, and recent commits |
+| `consultar_estado_hermes` | **Hermes Introspection** | Checks active sessions, running subagents, and memory | Returns live status via Cloudflare tunnel |
+| `controlar_tarea_hermes` | **Process & Task Control** | Understands stop/cancel/pause voice commands | Halts or pauses background tasks and subagents |
+| `gemelo_guardar_respuesta` | **Avatar Personal** | Asks deep personal questions, analyzes emotions & speech traits | Saves structured responses + personality profile to Obsidian |
+| `guardar_nota_rapida` | **Voice-to-Vault Notes** | Takes dictation with ambient context | Creates markdown files in Obsidian `📥 Inbox` |
+| `buscar_en_vault` | **Semantic Vault Search** | Natural language queries | Searches Obsidian vault and speaks excerpts |
+| `guardar_observacion` | **Visual Field Memory** | Vivid visual description + GPS location | Saves timestamped observations with photos to vault |
+| `exportar_chat_md` | **Chat Export** | Generates clean markdown transcript | Saves locally and syncs to Obsidian `📜 Historial Chat` |
+| `execute` | **General Execution** | General assistant queries | Web search, calendar, smart home, reminders |
 
-This turns Gemini from a pure voice assistant into a **bridge between your physical world and your digital brain**.
+This turns Gemini from a simple voice assistant into a **complete remote control interface for your PC, physical environment, and digital brain**.
+
+---
+
+## ⚡ Recent Innovations & Architecture Upgrades
+
+### 1. 📲 Remote PC Control & Telegram Dispatch
+- **Dual-Output Policy**: Gemini delivers concise 1-2 sentence spoken answers through the glasses to avoid audio overload while on the go, while dispatching complete logs, diffs, to-dos, and high-res POV photos directly to your private **Telegram** chat.
+- **Low-Latency Image Compression**: POV snapshots are automatically resized (800px) and compressed to JPEG (~50-70 KB) via `encodeSnapshotForTransmission` for instant transmission over 4G/5G mobile networks.
+
+### 2. 🎥 POV Demo Recording directly to iOS Photos
+- **Dual Audio Mix**: Records synchronized 1080x1440 H.264 video with both microphone audio (your voice) and digital audio (Gemini Live speech output) mixed without drift.
+- **Top-Bar REC Button**: Live status indicator with timer (`🔴 00:14`) and automatic save to `Photos.app`.
+
+### 3. 🧠 Scene-Gating & "Fresh Eyes" (<250ms)
+- **16x16 Pixel Thumbnail Engine**: Runs continuous mean absolute difference comparison (`FrameChange.swift`).
+- When you turn your head to look at a new object or scene, the 1-second video throttle is bypassed immediately, delivering fresh visual context to Gemini in under 250ms.
+
+### 4. 📍 CoreLocation Ambient Geocoding
+- Automatic reverse geocoding provides city, neighborhood, and coordinates (`X-Client-Location` header) for visual observations and Telegram reports without draining battery.
+
+### 5. 🛑 Smart Word-Boundary Stop & Low-Latency VAD
+- Regex-based word boundary detection (`\bstop\b`, `\bsilencio\b`, `\bpara\b`) silences speech instantly without cutting video streaming.
+- Gemini Live VAD configured to `silenceDurationMs: 250` and high sensitivity for natural conversational turns.
 
 ---
 
@@ -72,7 +98,7 @@ The glasses camera streams at ~1fps to Gemini for visual context, while audio fl
 
 ## 🧬 Avatar Personal Project
 
-One of the flagship features: **building an evolving profile of the user's personality**.
+One of the flagship features: **building a digital twin of the user's personality**.
 
 Every day, a deep personal question is sent via Telegram (or asked directly by Gemini). The user responds naturally for 15-20 minutes. Gemini detects emotions, speech patterns, values, and recurring themes. The structured analysis is saved to Obsidian via `gemelo_guardar_respuesta`.
 
@@ -121,35 +147,40 @@ iOS / Android App (VisionHermes)
        v
 Gemini Live API (WebSocket)
        |
-       |── Audio response (PCM 24kHz) ──> App ──> Speaker
+       |── Audio response (PCM 24kHz) ──> App ──> Glasses Speaker (Concise speech)
        |── Tool calls ──> App ──> Hermes Gateway (your-hermes-domain.example.com)
-       |                                   |
-       |                                   v
-       |                         ┌──────────────────────┐
-       |                         │   Tool Dispatcher    │
-       |                         │                      │
-       |                         │  execute             │
-       |                         │    → web search, msgs│
-       |                         │    → reminders, lists│
-       |                         │                      │
-       |                         │  gemelo_guardar_resp. │
-       |                         │    → 🧬 Avatar Personal│
-       |                         │    → perfil acumulativo
-       |                         │                      │
-       |                         │  guardar_nota_rapida  │
-       |                         │    → 📥 Inbox/nota.md│
-       |                         │                      │
-       |                         │  buscar_en_vault      │
-       |                         │    → 🔍 Obsidian search
-       |                         │                      │
-       |                         │  guardar_observacion  │
-       |                         │    → 📸 Observaciones │
-       |                         │                      │
-       |                         │  exportar_chat_md     │
-       |                         │    → 📜 Historial Chat│
-       |                         └──────────────────────┘
-       |                                   |
-       |<── Tool response (text) <── App <──+
+       |         |                         |
+       |         | (POV Photo + GPS)       v
+       |         |               ┌──────────────────────────────────────┐
+       |         |               │           Tool Dispatcher            │
+       |         |               │                                      │
+       |         |               │  enviar_reporte_telegram             │
+       |         |               │    → 📲 Telegram (Photo + Markdown)  │
+       |         |               │                                      │
+       |         |               │  ejecutar_script_remoto              │
+       |         |               │    → 💻 PC Shell, Python, TD render  │
+       |         |               │    → 📲 Full logs to Telegram        │
+       |         |               │                                      │
+       |         |               │  resumen_walk_and_talk               │
+       |         |               │    → 🧠 Obsidian + 📲 Telegram       │
+       |         |               │                                      │
+       |         |               │  guardar_referencia_visual           │
+       |         |               │    → 🎯 TouchDesigner nodes + Photo   │
+       |         |               │                                      │
+       |         |               │  consultar_estado_hermes / controlar │
+       |         |               │    → 🖥️ Sessions, subagents, control │
+       |         |               │                                      │
+       |         |               │  gemelo_guardar_respuesta            │
+       |         |               │    → 🧬 Avatar Personal perfil       │
+       |         |               │                                      │
+       |         |               │  guardar_nota_rapida / buscar_vault  │
+       |         |               │    → 📥 Inbox / 🔍 Vault Search       │
+       |         |               │                                      │
+       |         |               │  exportar_chat_md / execute          │
+       |         |               │    → 📜 Historial Chat / Web actions │
+       |         |               └──────────────────────────────────────┘
+       |         |                                 |
+       |<────────┴── Tool response (text) <── App <┘
        |
        v
   Gemini speaks the result
@@ -157,8 +188,12 @@ Gemini Live API (WebSocket)
 
 **Key pieces:**
 - **Gemini Live** -- real-time voice + vision AI over WebSocket (native audio, not STT-first)
-- **Hermes Agent** -- local/cloud gateway that gives Gemini access to 50+ tools, your Obsidian vault, and all your connected apps
-- **6 specialized tools** -- each designed for a specific capability (rather than a single catch-all `execute`)
+- **Hermes Agent** -- local/cloud gateway that gives Gemini access to your PC terminal, background subagents, Obsidian vault, and Telegram bot
+- **12+ specialized tools** -- purpose-built tools for field scouting, remote execution, Telegram delivery, and introspection
+- **Dual-Output Architecture** -- concise voice replies in the glasses, comprehensive logs/diffs/photos pushed to Telegram
+- **Session Recorder** -- 1080x1440 H.264 video recorder saving directly to Photos with dual audio mix
+- **Scene-Gating (<250ms)** -- 16x16 thumbnail comparator bypassing video throttle on head movements
+- **CoreLocation Engine** -- automatic GPS context and reverse geocoding in observations and reports
 - **Chat History Manager** -- persists all conversations with markdown export + vault sync
 - **Phone mode** -- test the full pipeline using your phone camera instead of glasses
 - **WebRTC streaming** -- share your glasses POV live to a browser viewer
@@ -229,7 +264,7 @@ Then in VisionHermes:
 ### 1. Clone and open
 
 ```bash
-git clone https://github.com/sseanliu/VisionHermes.git
+git clone https://github.com/tolchx/Vision-Hermes-Agent.git
 ```
 
 Open `samples/CameraAccessAndroid/` in Android Studio.
@@ -355,7 +390,7 @@ All source code is in `samples/CameraAccess/CameraAccess/`:
 | `Gemini/ChatModels.swift` | ChatSession, ChatMessage, Role data models |
 | `Gemini/ChatHistoryManager.swift` | Persists chat sessions, exports to Markdown, vault sync |
 | `Gemini/GeminiSessionViewModel.swift` | Session lifecycle, tool call wiring, transcript state, history manager integration |
-| `Hermes/ToolCallModels.swift` | **6 tool declarations** (execute, gemelo_guardar_respuesta, guardar_nota_rapida, buscar_en_vault, guardar_observacion, exportar_chat_md) |
+| `Hermes/ToolCallModels.swift` | **12+ tool declarations** (Telegram reports, remote scripts, walk & talk, field scout, daily briefing, status control, etc.) |
 | `Hermes/HermesBridge.swift` | HTTP client for Hermes Agent gateway (chat completions endpoint) |
 | `Hermes/ToolCallRouter.swift` | Routes Gemini tool calls to correct handler, export sharing |
 | `Views/ChatHistoryView.swift` | Chat history UI with MD export + vault sync for each session |

@@ -115,6 +115,11 @@ class GeminiLiveService: ObservableObject {
     resolveConnect(success: false)
   }
 
+  func interruptPlayback() {
+    isModelSpeaking = false
+    onInterrupted?()
+  }
+
   func sendAudio(data: Data) {
     guard connectionState == .ready else { return }
     sendQueue.async { [weak self] in
@@ -203,8 +208,8 @@ class GeminiLiveService: ObservableObject {
           "automaticActivityDetection": [
             "disabled": false,
             "startOfSpeechSensitivity": "START_SENSITIVITY_HIGH",
-            "endOfSpeechSensitivity": "END_SENSITIVITY_LOW",
-            "silenceDurationMs": 500,
+            "endOfSpeechSensitivity": "END_SENSITIVITY_HIGH",
+            "silenceDurationMs": 250,
             "prefixPaddingMs": 40
           ],
           "activityHandling": "START_OF_ACTIVITY_INTERRUPTS",

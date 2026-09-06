@@ -24,6 +24,7 @@ struct ToolCallHistoryEntry: Identifiable, Equatable {
 @MainActor
 class HermesBridge: ObservableObject {
   @Published var lastToolCallStatus: ToolCallStatus = .idle
+  @Published var activeToolCall: ActiveToolCallInfo? = nil
   @Published var connectionState: HermesConnectionState = .notConfigured
   @Published var latencyMs: Int? = nil
   @Published var toolCallHistory: [ToolCallHistoryEntry] = []
@@ -127,6 +128,16 @@ class HermesBridge: ObservableObject {
     toolName: String = "execute"
   ) async -> ToolResult {
     lastToolCallStatus = .executing(toolName)
+    if activeToolCall == nil || activeToolCall?.toolName != toolName {
+      activeToolCall = ActiveToolCallInfo(
+        id: UUID().uuidString,
+        toolName: toolName,
+        args: ["task": task],
+        state: .executing,
+        snapshotImage: nil,
+        timestamp: Date()
+      )
+    }
     AppLog("delegateTask: \(task.prefix(80))...", level: .debug)
 
     let host = GeminiConfig.hermesHost.hasPrefix("http") ? GeminiConfig.hermesHost : "https://\(GeminiConfig.hermesHost)"
@@ -151,10 +162,17 @@ class HermesBridge: ObservableObject {
     request.httpMethod = "POST"
     request.setValue("Bearer \(GeminiConfig.hermesGatewayToken)", forHTTPHeaderField: "Authorization")
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue(sessionKey, forHTTPHeaderField: "X-Session-ID")
+    request.setValue("meta-rayban-smart-glasses", forHTTPHeaderField: "X-Client-Device")
+    request.setValue("ios-vision-hermes", forHTTPHeaderField: "X-Client-Platform")
+    if let loc = LocationManager.shared.shortLocationName {
+      request.setValue(loc, forHTTPHeaderField: "X-Client-Location")
+    }
 
     let body: [String: Any] = [
       "model": "deepseek-chat",
       "messages": conversationHistory,
+      "user": sessionKey,
       "stream": false
     ]
 
@@ -187,6 +205,7 @@ class HermesBridge: ObservableObject {
         let safeContent = content.count > 8000 ? String(content.prefix(8000)) + "\n[Response truncated to fit WebSocket limit]" : content
         NSLog("[Hermes] Agent result: %@", String(safeContent.prefix(200)))
         lastToolCallStatus = .completed(toolName)
+        activeToolCall?.state = .completed(result: safeContent)
         addToolCallHistory(toolName: toolName, status: "completed", detail: content.prefix(60).replacingOccurrences(of: "\n", with: " ") + "...")
         return .success(safeContent)
       }
@@ -201,9 +220,36 @@ class HermesBridge: ObservableObject {
     } catch {
       NSLog("[Hermes] Agent error: %@", error.localizedDescription)
       lastToolCallStatus = .failed(toolName, error.localizedDescription)
+      activeToolCall?.state = .failed(error: error.localizedDescription)
       addToolCallHistory(toolName: toolName, status: "failed", detail: error.localizedDescription)
       return .failure("Agent error: \(error.localizedDescription)")
     }
+  }
+
+  func setActiveToolCall(id: String, toolName: String, args: [String: Any], snapshot: UIImage? = nil) {
+    activeToolCall = ActiveToolCallInfo(
+      id: id,
+      toolName: toolName,
+      args: args,
+      state: .executing,
+      snapshotImage: snapshot,
+      timestamp: Date()
+    )
+  }
+
+  func dismissActiveToolCall() {
+    activeToolCall = nil
+  }
+
+  /// Fetches a fast 1-sentence summary of Hermes active sessions for initial handshake
+  func fetchQuickStatusSummary() async -> String? {
+    guard case .connected = connectionState else { return nil }
+    let quickTask = "[ESTADO_HERMES] Resumen ultra-breve de 1 frase: ¿cuántas sesiones están activas en Hermes y qué estás ejecutando ahora mismo?"
+    let result = await delegateTask(task: quickTask, toolName: "consultar_estado_hermes")
+    if case .success(let text) = result {
+      return text
+    }
+    return nil
   }
 
   // MARK: - Tool Call History

@@ -15,6 +15,7 @@ class HermesToolCallRouter {
   func handleToolCall(
     _ call: GeminiFunctionCall,
     chatHistoryManager: ChatHistoryManager? = nil,
+    snapshot: UIImage? = nil,
     sendResponse: @escaping ([String: Any]) -> Void
   ) {
     let callId = call.id
@@ -22,6 +23,8 @@ class HermesToolCallRouter {
 
     NSLog("[HermesToolCall] Received: %@ (id: %@) args: %@",
           callName, callId, String(describing: call.args))
+
+    bridge.setActiveToolCall(id: callId, toolName: callName, args: call.args, snapshot: snapshot)
 
     switch callName {
 
@@ -45,6 +48,27 @@ class HermesToolCallRouter {
                         chatHistoryManager: chatHistoryManager,
                         sendResponse: sendResponse)
 
+    case "consultar_estado_hermes":
+      routeConsultarEstado(call: call, callId: callId, sendResponse: sendResponse)
+
+    case "controlar_tarea_hermes":
+      routeControlarTarea(call: call, callId: callId, sendResponse: sendResponse)
+
+    case "enviar_reporte_telegram":
+      routeEnviarReporteTelegram(call: call, callId: callId, snapshot: snapshot, sendResponse: sendResponse)
+
+    case "ejecutar_script_remoto":
+      routeEjecutarScriptRemoto(call: call, callId: callId, sendResponse: sendResponse)
+
+    case "resumen_walk_and_talk":
+      routeResumenWalkAndTalk(call: call, callId: callId, sendResponse: sendResponse)
+
+    case "guardar_referencia_visual":
+      routeGuardarReferenciaVisual(call: call, callId: callId, snapshot: snapshot, sendResponse: sendResponse)
+
+    case "consultar_briefing_diario":
+      routeConsultarBriefingDiario(call: call, callId: callId, sendResponse: sendResponse)
+
     default:
       NSLog("[HermesToolCall] Unknown tool: %@, falling back to execute", callName)
       routeExecute(call: call, callId: callId, sendResponse: sendResponse)
@@ -61,6 +85,7 @@ class HermesToolCallRouter {
       }
     }
     bridge.lastToolCallStatus = .cancelled(ids.first ?? "unknown")
+    bridge.activeToolCall?.state = .cancelled
   }
 
   /// Cancel all in-flight tool calls (on session stop)
@@ -158,8 +183,12 @@ class HermesToolCallRouter {
     let task = Task { @MainActor in
       let titulo = call.args["titulo"] as? String ?? "Observación"
       let descripcion = call.args["descripcion"] as? String ?? ""
-      let contexto = call.args["contexto"] as? String
+      var contexto = call.args["contexto"] as? String
       let tags = call.args["tags"] as? [String]
+
+      if let loc = LocationManager.shared.contextString {
+        contexto = (contexto != nil && !contexto!.isEmpty) ? "\(contexto!) | \(loc)" : loc
+      }
 
       let taskDesc = ToolDeclarations.observacionTask(
         titulo: titulo, descripcion: descripcion, contexto: contexto, tags: tags
@@ -212,7 +241,214 @@ class HermesToolCallRouter {
     inFlightTasks[callId] = task
   }
 
+  private func routeConsultarEstado(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let tipo = call.args["tipo_consulta"] as? String ?? "sesiones_activas"
+      let detalle = call.args["detalle"] as? String
+      let locationContext = LocationManager.shared.contextString
+
+      let taskDesc = ToolDeclarations.estadoHermesTask(
+        tipo: tipo,
+        detalle: detalle,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "consultar_estado_hermes")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "consultar_estado_hermes", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeControlarTarea(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let accion = call.args["accion"] as? String ?? "cancelar"
+      let objetivo = call.args["objetivo"] as? String
+
+      let taskDesc = ToolDeclarations.controlarTareaTask(accion: accion, objetivo: objetivo)
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "controlar_tarea_hermes")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "controlar_tarea_hermes", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeEnviarReporteTelegram(
+    call: GeminiFunctionCall, callId: String,
+    snapshot: UIImage?,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let tipo = call.args["tipo_reporte"] as? String ?? "nota_rapida"
+      let titulo = call.args["titulo"] as? String ?? "Reporte desde Gafas"
+      let contenido = call.args["contenido_md"] as? String ?? ""
+      let incluirFoto = call.args["incluir_foto_pov"] as? Bool ?? true
+      let canal = call.args["canal_o_chat"] as? String
+      let locationContext = LocationManager.shared.contextString
+
+      var fotoBase64: String? = nil
+      if incluirFoto, let snap = snapshot {
+        fotoBase64 = self.encodeSnapshotForTransmission(snap)
+      }
+
+      let taskDesc = ToolDeclarations.telegramReporteTask(
+        tipo: tipo,
+        titulo: titulo,
+        contenidoMD: contenido,
+        fotoBase64: fotoBase64,
+        canal: canal,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "enviar_reporte_telegram")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "enviar_reporte_telegram", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeEjecutarScriptRemoto(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let comando = call.args["comando_o_script"] as? String ?? ""
+      let directorio = call.args["directorio_trabajo"] as? String
+      let enviarLog = call.args["enviar_log_a_telegram"] as? Bool ?? true
+      let modo = call.args["modo_ejecucion"] as? String ?? "sincrono"
+
+      let taskDesc = ToolDeclarations.ejecutarScriptTask(
+        comando: comando,
+        directorio: directorio,
+        enviarLogTelegram: enviarLog,
+        modo: modo
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "ejecutar_script_remoto")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "ejecutar_script_remoto", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeResumenWalkAndTalk(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let titulo = call.args["titulo"] as? String ?? "Walk & Talk"
+      let ideas = call.args["ideas_clave"] as? [String] ?? []
+      let actions = call.args["action_items"] as? [String] ?? []
+      let resumen = call.args["resumen_ejecutivo"] as? String ?? ""
+      let guardarObsidian = call.args["guardar_en_obsidian"] as? Bool ?? true
+      let enviarTelegram = call.args["enviar_a_telegram"] as? Bool ?? true
+      let locationContext = LocationManager.shared.contextString
+
+      let taskDesc = ToolDeclarations.walkAndTalkTask(
+        titulo: titulo,
+        ideas: ideas,
+        actions: actions,
+        resumen: resumen,
+        guardarObsidian: guardarObsidian,
+        enviarTelegram: enviarTelegram,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "resumen_walk_and_talk")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "resumen_walk_and_talk", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeGuardarReferenciaVisual(
+    call: GeminiFunctionCall, callId: String,
+    snapshot: UIImage?,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let titulo = call.args["titulo"] as? String ?? "Referencia Visual"
+      let descripcion = call.args["descripcion_visual"] as? String ?? ""
+      let touchdesigner = call.args["sugerencia_touchdesigner"] as? String ?? ""
+      let tags = call.args["tags"] as? [String]
+      let enviarTelegram = call.args["enviar_a_telegram"] as? Bool ?? true
+      let locationContext = LocationManager.shared.contextString
+
+      var fotoBase64: String? = nil
+      if let snap = snapshot {
+        fotoBase64 = self.encodeSnapshotForTransmission(snap)
+      }
+
+      let taskDesc = ToolDeclarations.referenciaVisualTask(
+        titulo: titulo,
+        descripcion: descripcion,
+        touchdesigner: touchdesigner,
+        tags: tags,
+        fotoBase64: fotoBase64,
+        enviarTelegram: enviarTelegram,
+        locationContext: locationContext
+      )
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "guardar_referencia_visual")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "guardar_referencia_visual", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
+  private func routeConsultarBriefingDiario(
+    call: GeminiFunctionCall, callId: String,
+    sendResponse: @escaping ([String: Any]) -> Void
+  ) {
+    let task = Task { @MainActor in
+      let alcance = call.args["alcance"] as? String ?? "general"
+      let locationContext = LocationManager.shared.contextString
+
+      let taskDesc = ToolDeclarations.briefingDiarioTask(alcance: alcance, locationContext: locationContext)
+      let result = await bridge.delegateTask(task: taskDesc, toolName: "consultar_briefing_diario")
+      guard !Task.isCancelled else { return }
+      let response = buildToolResponse(callId: callId, name: "consultar_briefing_diario", result: result)
+      sendResponse(response)
+      inFlightTasks.removeValue(forKey: callId)
+    }
+    inFlightTasks[callId] = task
+  }
+
   // MARK: - Helpers
+
+  /// Resize and compress image to base64 JPEG for low-latency transmission over mobile network
+  private func encodeSnapshotForTransmission(_ image: UIImage?, maxDimension: CGFloat = 800, quality: CGFloat = 0.65) -> String? {
+    guard let image = image else { return nil }
+    let size = image.size
+    var targetSize = size
+    if max(size.width, size.height) > maxDimension {
+      let scale = maxDimension / max(size.width, size.height)
+      targetSize = CGSize(width: size.width * scale, height: size.height * scale)
+    }
+
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = 1.0
+    let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+    let resizedImage = renderer.image { _ in
+      image.draw(in: CGRect(origin: .zero, size: targetSize))
+    }
+
+    guard let jpegData = resizedImage.jpegData(compressionQuality: quality) else { return nil }
+    return jpegData.base64EncodedString()
+  }
 
   private func shareMarkdown(content: String, title: String) async {
     // Save to temp file and present share sheet

@@ -13,6 +13,8 @@ class GeminiSessionViewModel: ObservableObject {
   @Published var messages: [ChatMessage] = []
   @Published var currentSessionId = UUID()
   @Published var toolCallStatus: ToolCallStatus = .idle
+  @Published var activeToolCall: ActiveToolCallInfo? = nil
+  private(set) var latestFrame: UIImage? = nil
   @Published var hermesConnectionState: HermesConnectionState = .notConfigured
   @Published var isSpeakerOn: Bool = false
   let geminiService = GeminiLiveService()
@@ -21,6 +23,7 @@ class GeminiSessionViewModel: ObservableObject {
   private var toolCallRouter: HermesToolCallRouter?
   private let audioManager = AudioManager()
   private var lastVideoFrameTime: Date = .distantPast
+  private var lastSentThumbnail: [UInt8]?
   private var stateObservation: Task<Void, Never>?
 
   var streamingMode: StreamingMode = .glasses
@@ -30,6 +33,18 @@ class GeminiSessionViewModel: ObservableObject {
       Task { @MainActor in
         guard let self = self, !self.isGeminiActive else { return }
         await self.startSession()
+      }
+    }
+    wakeWordDetector.onStopDetected = { [weak self] in
+      Task { @MainActor in
+        guard let self = self, self.isGeminiActive else { return }
+        self.handleStopCommand(isExit: false)
+      }
+    }
+    wakeWordDetector.onStopVideoDetected = { [weak self] in
+      Task { @MainActor in
+        guard let self = self, self.isGeminiActive else { return }
+        self.handleStopCommand(isExit: true)
       }
     }
   }
@@ -96,8 +111,20 @@ class GeminiSessionViewModel: ObservableObject {
     geminiService.onInputTranscription = { [weak self] text in
       guard let self else { return }
       Task { @MainActor in
-        // For real-time streaming, we keep userTranscript for display
-        // but when it's "committed" (usually by the model starting to speak or turn complete), we save it
+        let lower = text.lowercased()
+        // Real-time stop command interception via word boundaries
+        if self.wakeWordDetector.matchesStopVideo(text: lower) {
+          NSLog("[Gemini] Stop video command detected — exiting session")
+          self.stopSession()
+          return
+        } else if self.wakeWordDetector.matchesStop(text: lower) {
+          NSLog("[Gemini] Stop command detected — silencing audio playback, staying live")
+          self.audioManager.stopPlayback()
+          self.geminiService.interruptPlayback()
+          self.isModelSpeaking = false
+          return
+        }
+
         self.userTranscript += text
       }
     }
@@ -143,7 +170,8 @@ class GeminiSessionViewModel: ObservableObject {
       Task { @MainActor in
         for call in toolCall.functionCalls {
           self.toolCallRouter?.handleToolCall(call,
-            chatHistoryManager: historyManager
+            chatHistoryManager: historyManager,
+            snapshot: self.latestFrame
           ) { [weak self] response in
             self?.geminiService.sendToolResponse(response)
           }
@@ -167,6 +195,7 @@ class GeminiSessionViewModel: ObservableObject {
         self.connectionState = self.geminiService.connectionState
         self.isModelSpeaking = self.geminiService.isModelSpeaking
         self.toolCallStatus = self.hermesBridge.lastToolCallStatus
+        self.activeToolCall = self.hermesBridge.activeToolCall
         self.hermesConnectionState = self.hermesBridge.connectionState
       }
     }
@@ -215,6 +244,18 @@ class GeminiSessionViewModel: ObservableObject {
       connectionState = .disconnected
       return
     }
+
+    // Trigger GPS location update for spatial context
+    LocationManager.shared.requestLocation()
+
+    // Hermes Handshake: verify Cloudflare tunnel & pre-fetch session status in background
+    Task { [weak self] in
+      guard let self else { return }
+      await self.hermesBridge.checkConnection()
+      if let summary = await self.hermesBridge.fetchQuickStatusSummary() {
+        NSLog("[Gemini] Hermes initial status handshake: %@", summary)
+      }
+    }
   }
 
   func stopSession() {
@@ -253,16 +294,49 @@ class GeminiSessionViewModel: ObservableObject {
     }
   }
 
+  func handleStopCommand(isExit: Bool) {
+    if isExit {
+      NSLog("[Gemini] handleStopCommand: full exit")
+      stopSession()
+    } else {
+      NSLog("[Gemini] handleStopCommand: silence audio, stay live")
+      audioManager.stopPlayback()
+      geminiService.interruptPlayback()
+      isModelSpeaking = false
+    }
+  }
+
   func sendVideoFrameIfThrottled(image: UIImage) {
     guard isGeminiActive, connectionState == .ready else { return }
     let now = Date()
-    guard now.timeIntervalSince(lastVideoFrameTime) >= GeminiConfig.videoFrameInterval else { return }
+    let currentThumb = FrameChange.grayThumbnail(image)
+    let isNew = lastSentThumbnail.map { FrameChange.isNewScene(currentThumb, $0) } ?? true
+
+    // When the user turns their head or the scene changes significantly,
+    // bypass the long 1s throttle interval (use 250ms floor) so Gemini gets fresh eyes immediately!
+    let elapsed = now.timeIntervalSince(lastVideoFrameTime)
+    let minInterval = isNew ? 0.25 : GeminiConfig.videoFrameInterval
+
+    guard elapsed >= minInterval else { return }
+
+    if isNew && lastSentThumbnail != nil {
+      NSLog("[FrameChange] New scene detected (diff: %.3f) — sending fresh eyes frame",
+            FrameChange.difference(currentThumb, lastSentThumbnail ?? []))
+    }
+
     lastVideoFrameTime = now
+    lastSentThumbnail = currentThumb
+    latestFrame = image
     geminiService.sendVideoFrame(image: image)
   }
 
-  func sendTextMessage(_ text: String) {
+  func sendTextMessage(_ text: String, currentFrame: UIImage? = nil) {
     guard isGeminiActive, connectionState == .ready else { return }
+    // Visual context injection for text questions: send freshest frame immediately
+    if let frame = currentFrame {
+      lastSentThumbnail = FrameChange.grayThumbnail(frame)
+      geminiService.sendVideoFrame(image: frame)
+    }
     geminiService.sendTextMessage(text)
     
     // Update the message history immediately for text commands
@@ -272,5 +346,4 @@ class GeminiSessionViewModel: ObservableObject {
       self.userTranscript = ""
     }
   }
-
 }

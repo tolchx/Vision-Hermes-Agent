@@ -20,6 +20,7 @@ struct StreamView: View {
   @ObservedObject var wearablesVM: WearablesViewModel
   @ObservedObject var geminiVM: GeminiSessionViewModel
   @ObservedObject var webrtcVM: WebRTCSessionViewModel
+  @ObservedObject private var recorder = SessionRecorder.shared
   @Binding var isMenuOpen: Bool
   @State private var showPiP = true
   @State private var pipPosition = CGPoint(x: UIScreen.main.bounds.width - 90, y: 150)
@@ -38,6 +39,35 @@ struct StreamView: View {
 
       floatingPiP
       pipToggleButton
+
+      // Toast notification for POV recording
+      if let toast = recorder.toastMessage {
+        VStack {
+          HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+              .foregroundColor(.green)
+            Text(toast)
+              .font(.system(size: 13, weight: .medium))
+              .foregroundColor(.white)
+          }
+          .padding(.horizontal, 16)
+          .padding(.vertical, 10)
+          .background(
+            Capsule()
+              .fill(.ultraThinMaterial)
+              .overlay(Capsule().stroke(Color.green.opacity(0.5), lineWidth: 1))
+          )
+          .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
+          .padding(.top, 50)
+          .transition(.move(edge: .top).combined(with: .opacity))
+          .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+              withAnimation { recorder.toastMessage = nil }
+            }
+          }
+          Spacer()
+        }
+      }
     }
     .onDisappear { cleanupSessions() }
     .sheet(isPresented: $viewModel.showPhotoPreview) { photoPreviewSheet }
@@ -106,6 +136,9 @@ struct StreamView: View {
 
       Spacer()
 
+      // REC Button (POV Demo to Photos)
+      RecordButtonView(recorder: recorder)
+
       // + New chat button (top right)
       Button {
         // Save current session and start new one
@@ -164,7 +197,13 @@ struct StreamView: View {
   private var bottomControls: some View {
     VStack(spacing: 8) {
         if geminiVM.isGeminiActive {
-            if geminiVM.toolCallStatus != .idle {
+            if let activeCall = geminiVM.activeToolCall {
+                GenerativeToolCardView(toolInfo: activeCall, onDismiss: {
+                    geminiVM.hermesBridge.dismissActiveToolCall()
+                })
+                .padding(.horizontal)
+                .transition(.scale(scale: 0.95).combined(with: .opacity))
+            } else if geminiVM.toolCallStatus != .idle {
                 ToolCallStatusView(status: geminiVM.toolCallStatus)
             }
 
@@ -379,4 +418,63 @@ struct DraggablePiPView<Content: View>: View {
                 }
         )
     }
+}
+
+
+// MARK: - RecordButtonView (POV Demo Recording)
+
+struct RecordButtonView: View {
+  @ObservedObject var recorder: SessionRecorder
+
+  var body: some View {
+    Button {
+      let generator = UIImpactFeedbackGenerator(style: .medium)
+      generator.impactOccurred()
+      if recorder.isRecording {
+        Task { await recorder.stopRecording() }
+      } else {
+        recorder.startRecording()
+      }
+    } label: {
+      if recorder.isRecording {
+        HStack(spacing: 6) {
+          Circle()
+            .fill(Color.red)
+            .frame(width: 8, height: 8)
+            .overlay(
+              Circle()
+                .stroke(Color.red.opacity(0.5), lineWidth: 2)
+                .scaleEffect(1.4)
+            )
+          Text(recorder.formattedDuration)
+            .font(.system(size: 11, weight: .bold, design: .monospaced))
+            .foregroundColor(.white)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+          Capsule()
+            .fill(.ultraThinMaterial)
+            .overlay(Capsule().stroke(Color.red.opacity(0.8), lineWidth: 1.5))
+        )
+      } else if recorder.isSaving {
+        ProgressView()
+          .progressViewStyle(CircularProgressViewStyle(tint: .white))
+          .scaleEffect(0.7)
+          .padding(8)
+          .background(Circle().fill(.ultraThinMaterial))
+      } else {
+        Image(systemName: "record.circle")
+          .foregroundColor(Color.red.opacity(0.9))
+          .font(.system(size: 20, weight: .medium))
+          .padding(8)
+          .background(
+            Circle()
+              .fill(.ultraThinMaterial)
+              .overlay(Circle().stroke(Color.red.opacity(0.4), lineWidth: 1))
+          )
+      }
+    }
+    .buttonStyle(.plain)
+  }
 }
