@@ -269,7 +269,23 @@ class StreamSessionViewModel: ObservableObject {
     // Stream state listener
     stateListenerToken = stream.statePublisher.listen { [weak self] state in
       Task { @MainActor [weak self] in
-        self?.updateStatusFromState(state)
+        guard let self else { return }
+        switch state {
+        case .stopped:
+          self.currentVideoFrame = nil
+          if self.userWantsCall {
+            self.glassesIssue = .reconnecting
+            self.streamingStatus = .waiting
+            self.scheduleReconnect()
+          } else {
+            self.streamingStatus = .stopped
+          }
+        case .streaming:
+          self.glassesIssue = nil
+          self.streamingStatus = .streaming
+        default:
+          self.streamingStatus = .waiting
+        }
       }
     }
 
@@ -381,24 +397,6 @@ class StreamSessionViewModel: ObservableObject {
     return .reconnecting
   }
 
-  private func updateStatusFromState(_ state: MWDATCamera.Stream.State) {
-    switch state {
-    case .stopped:
-      currentVideoFrame = nil
-      if userWantsCall {
-        glassesIssue = .reconnecting
-        streamingStatus = .waiting
-        scheduleReconnect()
-      } else {
-        streamingStatus = .stopped
-      }
-    case .streaming:
-      glassesIssue = nil
-      streamingStatus = .streaming
-    default:
-      streamingStatus = .waiting
-    }
-  }
 
   // MARK: - iPhone Camera Mode
 
