@@ -982,7 +982,7 @@ struct GenerativeToolCardView: View {
                     .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
                 )
               Text(hex.uppercased())
-                .font(.system(size: 8, weight: .monospaced))
+                .font(.system(size: 8, design: .monospaced))
                 .foregroundColor(.white.opacity(0.7))
             }
           }
