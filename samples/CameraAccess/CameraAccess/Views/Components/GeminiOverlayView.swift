@@ -971,7 +971,7 @@ struct GenerativeToolCardView: View {
 
       if let hexList = args["paleta_hex"] as? [String], !hexList.isEmpty {
         HStack(spacing: 6) {
-          ForEach(hexList.prefix(5), id: \.self) { hex in
+          ForEach(Array(hexList.prefix(5)), id: \.self) { hex in
             VStack(spacing: 3) {
               RoundedRectangle(cornerRadius: 6)
                 .fill(Color(hex: hex))

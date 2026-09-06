@@ -381,7 +381,7 @@ class StreamSessionViewModel: ObservableObject {
     return .reconnecting
   }
 
-  private func updateStatusFromState(_ state: StreamSessionState) {
+  private func updateStatusFromState(_ state: MWDATCamera.Stream.State) {
     switch state {
     case .stopped:
       currentVideoFrame = nil
@@ -392,11 +392,11 @@ class StreamSessionViewModel: ObservableObject {
       } else {
         streamingStatus = .stopped
       }
-    case .waitingForDevice, .starting, .stopping, .paused:
-      streamingStatus = .waiting
     case .streaming:
       glassesIssue = nil
       streamingStatus = .streaming
+    default:
+      streamingStatus = .waiting
     }
   }
 
