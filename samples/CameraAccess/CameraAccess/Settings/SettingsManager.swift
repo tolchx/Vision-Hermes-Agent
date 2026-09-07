@@ -28,7 +28,7 @@ final class SettingsManager: ObservableObject {
     case telegramChatId
   }
 
-  static let currentPromptVersion = "v2.6.2"
+  static let currentPromptVersion = "v2.6.3"
 
   private init() {}
 

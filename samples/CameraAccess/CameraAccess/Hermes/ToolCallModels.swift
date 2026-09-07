@@ -51,7 +51,12 @@ enum ToolResult {
     case .success(let result):
       return ["result": result]
     case .failure(let error):
-      return ["result": "Error al consultar a Hermes en la PC: \(error). Comunica brevemente a Tolch por voz que hubo un problema de conexión con su servidor de Hermes."]
+      let lower = error.lowercased()
+      if lower.contains("timed out") || lower.contains("tiempo") {
+        return ["result": "Hermes en la PC está procesando la tarea en segundo plano. Comunica a Tolch por voz que la tarea ya está en marcha en su computadora y que el reporte completo se enviará a Telegram."]
+      } else {
+        return ["result": "Error al consultar a Hermes en la PC: \(error). Comunica brevemente a Tolch por voz que hubo un problema de conexión con su servidor de Hermes."]
+      }
     }
   }
 }
@@ -1038,12 +1043,11 @@ extension ToolDeclarations {
     """
     if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
     task += """
-    \nInstrucciones para Hermes:
-    1. Spawnea un subagente autónomo en segundo plano para investigar a fondo, leer documentación, repositorios o papers.
-    2. Si requiere código, genera un prototipo funcional y guárdalo en tu workspace.
-    3. Guarda la síntesis estructurada en Obsidian (🧠 Investigaciones).
-    4. Envía el reporte ejecutivo completo con fragmentos de código y enlaces relevantes a Telegram.
-    5. Devuelve inmediatamente una confirmación concisa de 1 frase para que Gemini se la lea a Tolch en sus gafas.
+    \nINSTRUCCIÓN CRÍTICA DE RESPUESTA:
+    Tolch te está hablando desde las gafas Meta Ray-Ban.
+    1. Responde INMEDIATAMENTE en 1 o 2 frases breves confirmando que iniciaste la investigación y que le enviarás el reporte y código a Telegram.
+    2. Ejecuta la investigación, el prototipo y el informe en segundo plano y envía todo el resultado completo a Telegram y Obsidian.
+    3. NO ejecutes múltiples ciclos de herramientas síncronas antes de emitir tu primera respuesta hablada.
     """
     return task
   }

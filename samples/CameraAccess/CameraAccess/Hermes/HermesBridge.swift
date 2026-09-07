@@ -41,12 +41,12 @@ class HermesBridge: ObservableObject {
 
   init() {
     let config = URLSessionConfiguration.default
-    config.timeoutIntervalForRequest = 18
-    config.timeoutIntervalForResource = 30
+    config.timeoutIntervalForRequest = 60
+    config.timeoutIntervalForResource = 90
     self.session = URLSession(configuration: config)
 
     let pingConfig = URLSessionConfiguration.default
-    pingConfig.timeoutIntervalForRequest = 5
+    pingConfig.timeoutIntervalForRequest = 8
     self.pingSession = URLSession(configuration: pingConfig)
 
     self.sessionKey = HermesBridge.newSessionKey()
@@ -166,7 +166,7 @@ class HermesBridge: ObservableObject {
 
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
-    request.timeoutInterval = 18
+    request.timeoutInterval = 60
     request.setValue("Bearer \(GeminiConfig.hermesGatewayToken)", forHTTPHeaderField: "Authorization")
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue(HermesBridge.userAgent, forHTTPHeaderField: "User-Agent")
@@ -226,6 +226,9 @@ class HermesBridge: ObservableObject {
       addToolCallHistory(toolName: toolName, status: "completed", detail: "Raw response received")
       return .success(safeRaw)
     } catch {
+      if let last = conversationHistory.last, last["role"] == "user" {
+        conversationHistory.removeLast()
+      }
       NSLog("[Hermes] Agent error: %@", error.localizedDescription)
       lastToolCallStatus = .failed(toolName, error.localizedDescription)
       activeToolCall?.state = .failed(error: error.localizedDescription)
