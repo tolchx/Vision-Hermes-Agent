@@ -1,4 +1,4 @@
-﻿import UIKit
+import UIKit
 import Foundation
 
 // MARK: - Gemini Tool Call (parsed from server JSON)
@@ -51,7 +51,7 @@ enum ToolResult {
     case .success(let result):
       return ["result": result]
     case .failure(let error):
-      return ["error": error]
+      return ["result": "Error al consultar a Hermes en la PC: \(error). Comunica brevemente a Tolch por voz que hubo un problema de conexión con su servidor de Hermes."]
     }
   }
 }
@@ -213,7 +213,7 @@ enum ToolDeclarations {
 
   static let gemeloGuardarRespuesta: [String: Any] = [
     "name": "gemelo_guardar_respuesta",
-    "description": "Guarda una respuesta del Avatar Personal del usuario en Obsidian. Usar cuando el usuario responda una pregunta profunda sobre su personalidad, valores o historia. REQUIERE: categoria, pregunta y respuesta.",
+    "description": "Guarda una respuesta del Gemelo Digital de Tolch en Obsidian. Usar cuando Tolch responda una pregunta profunda sobre su personalidad, valores o historia. REQUIERE: categoria, pregunta y respuesta.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -223,11 +223,11 @@ enum ToolDeclarations {
         ],
         "pregunta": [
           "type": "string",
-          "description": "La pregunta exacta que se le hizo al usuario"
+          "description": "La pregunta exacta que se le hizo a Tolch"
         ],
         "respuesta": [
           "type": "string",
-          "description": "Transcripción completa o resumen detallado de lo que dijo el usuario"
+          "description": "Transcripción completa o resumen detallado de lo que dijo Tolch"
         ],
         "analisis_emocion": [
           "type": "string",
@@ -252,7 +252,7 @@ enum ToolDeclarations {
 
   static let guardarNotaRapida: [String: Any] = [
     "name": "guardar_nota_rapida",
-    "description": "Guarda una nota rápida en Obsidian. Usar cuando el usuario dice algo que quiere recordar: ideas, tareas, inspiración, algo que vio, algo que pensó. Crea un archivo Markdown en la carpeta 📥 Inbox del vault.",
+    "description": "Guarda una nota rápida en Obsidian. Usar cuando Tolch dice algo que quiere recordar: ideas, tareas, inspiración, algo que vio, algo que pensó. Crea un archivo Markdown en la carpeta 📥 Inbox del vault.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -278,7 +278,7 @@ enum ToolDeclarations {
 
   static let buscarEnVault: [String: Any] = [
     "name": "buscar_en_vault",
-    "description": "Busca información en el vault de Obsidian del usuario. Usar cuando pregunte algo que pueda estar en sus notas: conceptos de TouchDesigner, proyectos, sesiones pasadas, memoria de Hermes, etc. Devuelve fragmentos relevantes de las notas.",
+    "description": "Busca información en el vault de Obsidian de Tolch. Usar cuando pregunte algo que pueda estar en sus notas: conceptos de TouchDesigner, proyectos, sesiones pasadas, memoria de Hermes, etc. Devuelve fragmentos relevantes de las notas.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -300,7 +300,7 @@ enum ToolDeclarations {
 
   static let guardarObservacion: [String: Any] = [
     "name": "guardar_observacion",
-    "description": "Guarda una observación del mundo real captada por la cámara de las gafas. Gemini describe lo que ve y Hermes lo guarda como nota en Obsidian con timestamp y contexto visual. Usar cuando el usuario ve algo interesante, un lugar, un objeto, una persona, una obra de arte, etc. y quiere registrarlo.",
+    "description": "Guarda una observación del mundo real captada por la cámara de las gafas. Gemini describe lo que ve y Hermes lo guarda como nota en Obsidian con timestamp y contexto visual. Usar cuando Tolch ve algo interesante, un lugar, un objeto, una persona, una obra de arte, etc. y quiere registrarlo.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -314,7 +314,7 @@ enum ToolDeclarations {
         ],
         "contexto": [
           "type": "string",
-          "description": "Contexto de por qué esto es relevante: lo que dijo el usuario al verlo, por qué llamó su atención, qué quiere recordar"
+          "description": "Contexto de por qué esto es relevante: lo que dijo Tolch al verlo, por qué llamó su atención, qué quiere recordar"
         ],
         "tags": [
           "type": "array",
@@ -330,18 +330,18 @@ enum ToolDeclarations {
   // ── 7. consultar_estado_hermes ────────────────────────────────
   static let consultarEstadoHermes: [String: Any] = [
     "name": "consultar_estado_hermes",
-    "description": "Consulta a Hermes qué sesiones están activas, qué tareas está ejecutando en segundo plano, qué subagentes o procesos tiene en marcha, o el estado general de su memoria. USAR SIEMPRE que el usuario pregunte qué está haciendo Hermes, qué sesiones hay activas, qué tareas están corriendo, o el estado de sus procesos.",
+    "description": "Consulta a Hermes en la PC qué sesiones están activas, qué proyectos o trabajos se vieron o realizaron hoy ('qué proyectos vimos hoy', 'qué estuvimos haciendo con Hermes hoy'), si estás conectado ('conéctate a Hermes', 'estás conectado'), o tareas en segundo plano. USAR SIEMPRE que Tolch pregunte qué está haciendo Hermes, qué proyectos vimos hoy, o si estás conectado a Hermes.",
     "parameters": [
       "type": "object",
       "properties": [
         "tipo_consulta": [
           "type": "string",
-          "description": "Tipo de consulta: sesiones_activas | tareas_fondo | estado_general | memoria_reciente",
-          "enum": ["sesiones_activas", "tareas_fondo", "estado_general", "memoria_reciente"]
+          "description": "Tipo de consulta: proyectos_de_hoy | sesiones_activas | conexion_y_estado | tareas_fondo | estado_general | memoria_reciente",
+          "enum": ["proyectos_de_hoy", "sesiones_activas", "conexion_y_estado", "tareas_fondo", "estado_general", "memoria_reciente"]
         ],
         "detalle": [
           "type": "string",
-          "description": "Pregunta o aclaración específica del usuario (opcional)"
+          "description": "Pregunta o aclaración específica de Tolch (ej: 'qué proyectos vimos hoy', 'estás conectado a Hermes')"
         ]
       ],
       "required": ["tipo_consulta"]
@@ -352,7 +352,7 @@ enum ToolDeclarations {
   // ── 8. controlar_tarea_hermes ────────────────────────────────
   static let controlarTareaHermes: [String: Any] = [
     "name": "controlar_tarea_hermes",
-    "description": "Envía una orden de control a Hermes para cancelar, pausar o detener una tarea, subagente o proceso en segundo plano. USAR cuando el usuario pida cancelar, parar o abortar una tarea anterior o un proceso de Hermes.",
+    "description": "Envía una orden de control a Hermes para cancelar, pausar o detener una tarea, subagente o proceso en segundo plano. USAR cuando Tolch pida cancelar, parar o abortar una tarea anterior o un proceso de Hermes.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -375,7 +375,7 @@ enum ToolDeclarations {
 
   static let exportarChatMd: [String: Any] = [
     "name": "exportar_chat_md",
-    "description": "Exporta el historial de la conversación actual como archivo Markdown y lo guarda en el vault de Obsidian y/o lo comparte. Usar cuando el usuario pida guardar toda la conversación, exportar el chat, o tener un registro permanente de lo hablado.",
+    "description": "Exporta el historial de la conversación actual como archivo Markdown y lo guarda en el vault de Obsidian y/o lo comparte. Usar cuando Tolch pida guardar toda la conversación, exportar el chat, o tener un registro permanente de lo hablado.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -397,7 +397,7 @@ enum ToolDeclarations {
 
   static let enviarReporteTelegram: [String: Any] = [
     "name": "enviar_reporte_telegram",
-    "description": "Envía un reporte formateado en Markdown, resumen de reunión, observación visual, brainstorm o alerta directamente a Telegram (chat privado o canal). Opcionalmente incluye la captura actual de la cámara de las gafas (POV). USAR cuando el usuario pida enviar algo a Telegram, mandar un resumen al celular o compartir una foto/reporte por Telegram.",
+    "description": "Envía un reporte formateado en Markdown, resumen de reunión, observación visual, brainstorm o alerta directamente a Telegram (chat privado o canal). Opcionalmente incluye la captura actual de la cámara de las gafas (POV). USAR cuando Tolch pida enviar algo a Telegram, mandar un resumen al celular o compartir una foto/reporte por Telegram.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -420,7 +420,7 @@ enum ToolDeclarations {
         ],
         "canal_o_chat": [
           "type": "string",
-          "description": "Destino en Telegram si el usuario especifica uno (ej: 'personal', 'trabajo', 'notas'). Opcional."
+          "description": "Destino en Telegram si Tolch especifica uno (ej: 'personal', 'trabajo', 'notas'). Opcional."
         ]
       ],
       "required": ["tipo_reporte", "titulo", "contenido_md"]
@@ -432,7 +432,7 @@ enum ToolDeclarations {
 
   static let ejecutarScriptRemoto: [String: Any] = [
     "name": "ejecutar_script_remoto",
-    "description": "Ejecuta un comando de consola, script de Python, Node.js, Git, Docker o pipeline de TouchDesigner en la computadora del usuario en casa. Responde por las gafas con una síntesis breve en audio y envía el log completo o diff a Telegram.",
+    "description": "Ejecuta un comando de consola, script de Python, Node.js, Git, Docker o pipeline de TouchDesigner en la computadora de Tolch en casa. Responde por las gafas con una síntesis breve en audio y envía el log completo o diff a Telegram.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -463,7 +463,7 @@ enum ToolDeclarations {
 
   static let resumenWalkAndTalk: [String: Any] = [
     "name": "resumen_walk_and_talk",
-    "description": "Sintetiza una caminata de lluvia de ideas, debate o reflexión con el usuario. Extrae ideas principales, action items con prioridades y guarda la nota en Obsidian además de despachar el informe formateado a Telegram.",
+    "description": "Sintetiza una caminata de lluvia de ideas, debate o reflexión con Tolch. Extrae ideas principales, action items con prioridades y guarda la nota en Obsidian además de despachar el informe formateado a Telegram.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -557,7 +557,7 @@ enum ToolDeclarations {
 
   static let delegarInvestigacionProfunda: [String: Any] = [
     "name": "delegar_investigacion_profunda",
-    "description": "Delega una investigación técnica, búsqueda de papers/repositorios o análisis profundo a un subagente autónomo de Hermes en la PC. Gemini confirma con 1 frase por las gafas y el subagente entrega el reporte completo con código y enlaces a Telegram y Obsidian. USAR cuando el usuario pida investigar un tema a fondo, buscar código o prototipar algo mientras está en movimiento.",
+    "description": "Delega una investigación técnica, búsqueda de papers/repositorios o análisis profundo a un subagente autónomo de Hermes en la PC. Gemini confirma con 1 frase por las gafas y el subagente entrega el reporte completo con código y enlaces a Telegram y Obsidian. USAR cuando Tolch pida investigar un tema a fondo, buscar código o prototipar algo mientras está en movimiento.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -721,7 +721,7 @@ enum ToolDeclarations {
 
   static let repasarConceptosVault: [String: Any] = [
     "name": "repasar_conceptos_vault",
-    "description": "Modo 'Walk & Learn'. Hermes consulta las notas del Vault de Obsidian sobre un tema solicitado y extrae conceptos o preguntas clave. Gemini actúa como un tutor interactivo por voz mientras el usuario camina, haciéndole preguntas socráticas breves y profundizando según sus respuestas.",
+    "description": "Modo 'Walk & Learn'. Hermes consulta las notas del Vault de Obsidian sobre un tema solicitado y extrae conceptos o preguntas clave. Gemini actúa como un tutor interactivo por voz mientras Tolch camina, haciéndole preguntas socráticas breves y profundizando según sus respuestas.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -735,7 +735,7 @@ enum ToolDeclarations {
         ],
         "concepto_especifico": [
           "type": "string",
-          "description": "Concepto o nota específica si el usuario quiere enfocarse en algo puntual (opcional)"
+          "description": "Concepto o nota específica si Tolch quiere enfocarse en algo puntual (opcional)"
         ]
       ],
       "required": ["tema_o_carpeta"]
@@ -795,7 +795,7 @@ enum ToolDeclarations {
 
   static let dondeDejeMiObjeto: [String: Any] = [
     "name": "donde_deje_mi_objeto",
-    "description": "Memoria visual temporal para objetos cotidianos (llaves, billetera, mochila, lentes). Consulta el buffer temporal de fotogramas recientes capturados por las gafas, identifica cuándo y dónde fue visto el objeto por última vez y le informa al usuario verbalmente y con foto a Telegram.",
+    "description": "Memoria visual temporal para objetos cotidianos (llaves, billetera, mochila, lentes). Consulta el buffer temporal de fotogramas recientes capturados por las gafas, identifica cuándo y dónde fue visto el objeto por última vez y le informa a Tolch verbalmente y con foto a Telegram.",
     "parameters": [
       "type": "object",
       "properties": [
@@ -885,7 +885,13 @@ extension ToolDeclarations {
     """
     if let d = detalle, !d.isEmpty { task += "\nDetalle: \(d)" }
     if let loc = locationContext, !loc.isEmpty { task += "\n\(loc)" }
-    task += "\nPor favor informa detalladamente: sesiones activas, subagentes en ejecución, tareas en segundo plano y estado actual."
+    if tipo == "proyectos_de_hoy" || (detalle?.lowercased().contains("proyecto") ?? false) {
+      task += "\nTolch te pregunta a través de las gafas Meta Ray-Ban qué proyectos o trabajos vimos con Hermes hoy. Revisa las sesiones de hoy, notas y cron jobs, y responde en 2 o 3 frases claras y concisas para ser leídas por voz."
+    } else if tipo == "conexion_y_estado" || (detalle?.lowercased().contains("conecta") ?? false) {
+      task += "\nTolch te pregunta a través de las gafas si la conexión con Hermes está activa. Confirma brevemente que estás conectado y listo para asistirle."
+    } else {
+      task += "\nPor favor responde en 1 a 3 frases concisas para ser leídas por voz a través de las gafas Meta Ray-Ban: informa sobre las sesiones activas, tareas en segundo plano y estado actual."
+    }
     return task
   }
 
@@ -941,7 +947,7 @@ extension ToolDeclarations {
     task += """
     \nInstrucciones para Hermes:
     1. Ejecuta el comando de forma segura en la computadora.
-    2. Devuelve una respuesta breve de 1 a 2 frases para que Gemini se la lea al usuario en sus gafas.
+    2. Devuelve una respuesta breve de 1 a 2 frases para que Gemini se la lea a Tolch en sus gafas.
     3. Si 'Enviar Log a Telegram' es Sí, envía el log completo, diff o salida formateada a Telegram.
     """
     return task
@@ -1037,7 +1043,7 @@ extension ToolDeclarations {
     2. Si requiere código, genera un prototipo funcional y guárdalo en tu workspace.
     3. Guarda la síntesis estructurada en Obsidian (🧠 Investigaciones).
     4. Envía el reporte ejecutivo completo con fragmentos de código y enlaces relevantes a Telegram.
-    5. Devuelve inmediatamente una confirmación concisa de 1 frase para que Gemini se la lea al usuario en sus gafas.
+    5. Devuelve inmediatamente una confirmación concisa de 1 frase para que Gemini se la lea a Tolch en sus gafas.
     """
     return task
   }
@@ -1160,7 +1166,7 @@ extension ToolDeclarations {
     if let c = conceptoEspecifico, !c.isEmpty { task += "\nConcepto Específico: \(c)" }
     if let loc = locationContext, !loc.isEmpty { task += "\nUbicación: \(loc)" }
     task += """
-    \nPor favor busca en las notas de Obsidian sobre este tema y devuelve 2 a 3 conceptos clave con una pregunta socrática breve para que Gemini se la haga al usuario por las gafas.
+    \nPor favor busca en las notas de Obsidian sobre este tema y devuelve 2 a 3 conceptos clave con una pregunta socrática breve para que Gemini se la haga a Tolch por las gafas.
     """
     return task
   }
@@ -1227,5 +1233,4 @@ extension ToolDeclarations {
     return task
   }
 }
-
 

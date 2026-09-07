@@ -11,6 +11,7 @@ final class SettingsManager: ObservableObject {
     case hermesPort
     case hermesHookToken
     case hermesGatewayToken
+    case promptVersion
     case geminiSystemPrompt
     case webrtcSignalingURL
     case activeAIBackend
@@ -27,6 +28,8 @@ final class SettingsManager: ObservableObject {
     case telegramChatId
   }
 
+  static let currentPromptVersion = "v2.6.2"
+
   private init() {}
 
   // MARK: - Gemini
@@ -37,7 +40,15 @@ final class SettingsManager: ObservableObject {
   }
 
   var geminiSystemPrompt: String {
-    get { defaults.string(forKey: Key.geminiSystemPrompt.rawValue) ?? GeminiConfig.defaultSystemInstruction }
+    get {
+      let storedVersion = defaults.string(forKey: Key.promptVersion.rawValue)
+      if storedVersion != SettingsManager.currentPromptVersion {
+        defaults.set(SettingsManager.currentPromptVersion, forKey: Key.promptVersion.rawValue)
+        defaults.removeObject(forKey: Key.geminiSystemPrompt.rawValue)
+        return GeminiConfig.defaultSystemInstruction
+      }
+      return defaults.string(forKey: Key.geminiSystemPrompt.rawValue) ?? GeminiConfig.defaultSystemInstruction
+    }
     set { defaults.set(newValue, forKey: Key.geminiSystemPrompt.rawValue) }
   }
 

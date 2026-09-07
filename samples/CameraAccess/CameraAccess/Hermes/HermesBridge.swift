@@ -37,9 +37,12 @@ class HermesBridge: ObservableObject {
   private let maxHistoryTurns = 10
   private let maxToolCallHistory = 50
 
+  static let userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 VisionHermes/2.6"
+
   init() {
     let config = URLSessionConfiguration.default
-    config.timeoutIntervalForRequest = 120
+    config.timeoutIntervalForRequest = 18
+    config.timeoutIntervalForResource = 30
     self.session = URLSession(configuration: config)
 
     let pingConfig = URLSessionConfiguration.default
@@ -68,18 +71,19 @@ class HermesBridge: ObservableObject {
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
     request.setValue("Bearer \(GeminiConfig.hermesGatewayToken)", forHTTPHeaderField: "Authorization")
-    request.timeoutInterval = 15
+    request.setValue(HermesBridge.userAgent, forHTTPHeaderField: "User-Agent")
+    request.timeoutInterval = 8
     do {
       let (_, response) = try await URLSession.shared.data(for: request)
       let elapsed = Int(Date().timeIntervalSince(start) * 1000)
       latencyMs = elapsed
-      if let http = response as? HTTPURLResponse, (200...499).contains(http.statusCode) {
+      if let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) {
         connectionState = .connected
         AppLog("Hermes connected (HTTP \(http.statusCode)) [\(elapsed)ms]", level: .info)
       } else {
         let httpStatusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-        connectionState = .unreachable("Unexpected response")
-        AppLog("Hermes unexpected response: HTTP \(httpStatusCode)", level: .warn)
+        connectionState = .unreachable("HTTP \(httpStatusCode)")
+        AppLog("Hermes unreachable: HTTP \(httpStatusCode)", level: .warn)
       }
     } catch {
       connectionState = .unreachable(error.localizedDescription)
@@ -96,12 +100,13 @@ class HermesBridge: ObservableObject {
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
     request.setValue("Bearer \(GeminiConfig.hermesGatewayToken)", forHTTPHeaderField: "Authorization")
+    request.setValue(HermesBridge.userAgent, forHTTPHeaderField: "User-Agent")
     request.timeoutInterval = 5
     let start = Date()
     do {
       let (_, response) = try await pingSession.data(for: request)
       let elapsed = Int(Date().timeIntervalSince(start) * 1000)
-      if let http = response as? HTTPURLResponse, (200...499).contains(http.statusCode) {
+      if let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) {
         latencyMs = elapsed
       } else {
         latencyMs = nil
@@ -161,8 +166,10 @@ class HermesBridge: ObservableObject {
 
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
+    request.timeoutInterval = 18
     request.setValue("Bearer \(GeminiConfig.hermesGatewayToken)", forHTTPHeaderField: "Authorization")
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue(HermesBridge.userAgent, forHTTPHeaderField: "User-Agent")
     request.setValue(sessionKey, forHTTPHeaderField: "X-Session-ID")
     request.setValue("meta-rayban-smart-glasses", forHTTPHeaderField: "X-Client-Device")
     request.setValue("ios-vision-hermes", forHTTPHeaderField: "X-Client-Platform")
@@ -171,7 +178,7 @@ class HermesBridge: ObservableObject {
     }
 
     let body: [String: Any] = [
-      "model": "deepseek-chat",
+      "model": "openclaw",
       "messages": conversationHistory,
       "user": sessionKey,
       "stream": false
@@ -192,7 +199,7 @@ class HermesBridge: ObservableObject {
         AppLog("delegateTask: HTTP error \(code): \(bodyStr.prefix(100))", level: .error)
         lastToolCallStatus = .failed(toolName, "HTTP \(code)")
         addToolCallHistory(toolName: toolName, status: "failed", detail: "HTTP \(code)")
-        return .failure("Agent returned HTTP \(code)")
+        return .failure("Hermes respondió con error HTTP \(code)")
       }
 
       if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -223,7 +230,7 @@ class HermesBridge: ObservableObject {
       lastToolCallStatus = .failed(toolName, error.localizedDescription)
       activeToolCall?.state = .failed(error: error.localizedDescription)
       addToolCallHistory(toolName: toolName, status: "failed", detail: error.localizedDescription)
-      return .failure("Agent error: \(error.localizedDescription)")
+      return .failure("No se pudo comunicar con Hermes en la PC (\(error.localizedDescription)). Verificá la conexión.")
     }
   }
 
