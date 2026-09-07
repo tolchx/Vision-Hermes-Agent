@@ -1,4 +1,4 @@
-﻿# VisionHermes
+# VisionHermes
 
 ![VisionHermes](assets/teaserimage.png)
 
@@ -65,6 +65,13 @@ This turns Gemini from a simple voice assistant into a **complete remote control
 ### 5. 🛑 Smart Word-Boundary Stop & Low-Latency VAD
 - Regex-based word boundary detection (`\bstop\b`, `\bsilencio\b`, `\bpara\b`) silences speech instantly without cutting video streaming.
 - Gemini Live VAD configured to `silenceDurationMs: 250` and high sensitivity for natural conversational turns.
+
+### 6. 🛡️ Cloudflare WAF Bypass & Fast Voice ACK (v2.6.3)
+- **Cloudflare WAF Compatibility**: `HermesBridge` now sends native Safari iOS user-agent signatures (`Mozilla/5.0 ... VisionHermes/2.6`), preventing Cloudflare Error 1010 / 403 Forbidden blocks when tunneling requests to your host machine.
+- **Fast Voice Acknowledgment**: When initiating complex operations (`delegar_investigacion_profunda`, `ejecutar_script_remoto`), Hermes provides an immediate 1-2 sentence spoken voice acknowledgment to the glasses, delegating long-running terminal/subagent work to Telegram and Obsidian in the background.
+- **Expanded 60s Request Timeout & Turn Integrity**: `delegateTask` timeout is set to 60 seconds (with 90s resource limits) so complex agent turns don't prematurely abort, with automatic cleanup of unconfirmed turns to prevent conversation history sequence errors.
+- **Headless Autonomous Execution**: Gateway configured with `approvals: mode: "off"`, allowing terminal commands and background scripts triggered from the glasses to execute seamlessly without halting for keyboard approval.
+- **System Prompt Auto-Bust**: Client-side prompt versioning (`v2.6.3`) automatically invalidates cached `UserDefaults` prompts on app updates to ensure new tool-calling directives take effect immediately.
 
 ---
 
